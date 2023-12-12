@@ -1,0 +1,25 @@
+{
+  "name": "bioengine-web-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs-backend-cpu": "^4.14.0",
+    "@tensorflow/tfjs-core": "^4.14.0",
+    "imjoy-core": "^0.14.4",
+    "imjoy-rpc": "^0.5.46",
+    "lodash": "^4.17.21",
+    "npyjs": "^0.5.0",
+    "primevue": "^3.43.0",
+    "vue": "^3.3.11"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.2",
+    "vite": "^5.0.8"
+  }
+}
