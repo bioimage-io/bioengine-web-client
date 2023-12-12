@@ -112,7 +112,7 @@ function reverseEndianness(arrayBuffer, bytesPerElement) {
   return arrayBuffer;
 }
 
-export function ImjoyToTfJs(arr) {
+export function imjoyToTfjs(arr) {
   let buffer = new ArrayBuffer(arr._rvalue.length);
   let bufferView = new Uint8Array(buffer);
   bufferView.set(arr._rvalue);
@@ -131,7 +131,7 @@ export function ImjoyToTfJs(arr) {
   return tensor;
 }
 
-export function toImJoyArr(tensor, reverseEnd = false) {
+export function tfjsToImJoy(tensor, reverseEnd = false) {
   const data = tensor.dataSync();
   const Constructor = getConstructor(tensor._rdtype);
   let casted = new Constructor(data.length);
@@ -333,7 +333,7 @@ export function processForShow(tensor, specAxes) {
   }
   return splitedArrs.map(arr => {
     arr._rdtype = tensor._rdtype;
-    return toImJoyArr(arr);
+    return tfjsToImJoy(arr);
   });
 }
 

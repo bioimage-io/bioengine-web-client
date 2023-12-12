@@ -1,9 +1,9 @@
 <script setup>
-import TestRun from './components/TestRun.vue';
+import RunPanel from './components/RunPanel.vue';
 </script>
 
 <template>
-  <TestRun />
+  <RunPanel />
 </template>
 
 <style scoped>
