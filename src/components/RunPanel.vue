@@ -48,19 +48,22 @@
 
 <style scoped>
 #ij-container {
-  height: 600px;
-  border: 1px solid #ccc;
+    height: 600px;
+    border: 1px solid #ccc;
 }
 #buttons {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  display: flex;
-  gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 10px;
 }
 #info-panel {
-  display: inline-block;
-  margin-left: 10px;
-  margin-bottom: 20px;
+    display: inline-block;
+    margin-left: 10px;
+    margin-bottom: 20px;
+}
+#info {
+    margin-top: 10px;
 }
 </style>
 
@@ -99,7 +102,8 @@ export default {
         buttonEnabledInput: false,
         buttonEnabledOutput: false,
         tileSizes: { x: 0, y: 0, z: 0 },
-        tileOverlaps: { x: 0, y: 0, z: 0 }
+        tileOverlaps: { x: 0, y: 0, z: 0 },
+        runner: null,
     }),
     computed: {
         infoColor() {
@@ -109,6 +113,24 @@ export default {
             else {
                 return "black";
             }
+        },
+        tritonConfig() {
+            if (!this.runner) {
+                return {};
+            }
+            return this.runner.modelTritonConfig;
+        },
+        inputMinShape() {
+            if (!this.runner) {
+                return {};
+            }
+            return this.runner.getInputMinShape();
+        },
+        inputMaxShape() {
+            if (!this.runner) {
+                return {};
+            }
+            return this.runner.getInputMaxShape();
         },
     },
     watch: {
@@ -138,8 +160,9 @@ export default {
         async init() {
             this.setInfoPanel("Initializing...", true);
             await this.initImJoy();
-            this.runner = new ModelRunner("https://ai.imjoy.io");
-            await this.runner.init();
+            const runner = new ModelRunner("https://ai.imjoy.io");
+            await runner.init();
+            this.runner = runner;
             const defaultModelId = "10.5281/zenodo.5764892";
             await this.initModel(defaultModelId);
             if (this.$props.ij) {
