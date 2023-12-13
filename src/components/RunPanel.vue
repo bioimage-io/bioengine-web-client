@@ -74,7 +74,7 @@ import {
 import HideContainer from "./HideContainer.vue";
 import OverlayContainer from "./OverlayContainer.vue";
 import AdvanceSetting from "./AdvanceSetting.vue";
-import LoadingAnimation from "./loadingAnimation.vue";
+import LoadingAnimation from "./LoadingAnimation.vue";
 import { ModelRunner } from "../modelRun";
 import { ImagejJsController } from "../viewerControl";
 
