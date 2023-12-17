@@ -36,6 +36,8 @@
           :inputMaxShape="this.inputMaxShape"
           :tileSizes="this.tileSizes"
           :tileOverlaps="this.tileOverlaps"
+          :serverUrl="this.serverUrl"
+          @server-url-changed="this.handleServerUrlChange"
         ></AdvanceSetting>
       </OverlayContainer>
     </HideContainer>
@@ -130,6 +132,7 @@ export default {
         tileSizes: { x: 0, y: 0, z: 0 },
         tileOverlaps: { x: 0, y: 0, z: 0 },
         runner: null,
+        serverUrl: "https://hypha.bioimage.io",
     }),
     computed: {
         infoColor() {
@@ -157,6 +160,18 @@ export default {
                 return {};
             }
             return this.runner.getInputMaxShape();
+        },
+        inputSpec() {
+            if (!this.runner) {
+                return {};
+            }
+            return this.runner.rdf.inputs[0];
+        },
+        outputSpec() {
+            if (!this.runner) {
+                return {};
+            }
+            return this.runner.rdf.outputs[0];
         },
     },
     watch: {
@@ -186,7 +201,7 @@ export default {
         async init() {
             this.setInfoPanel("Initializing...", true);
             await this.initImJoy();
-            const runner = new ModelRunner("https://ai.imjoy.io");
+            const runner = new ModelRunner(this.serverUrl);
             await runner.init();
             this.runner = runner;
             const defaultModelId = "10.5281/zenodo.5764892";
@@ -202,10 +217,13 @@ export default {
             this.setInfoPanel("");
             this.turnButtons(true);
         },
-        async initModel(modelId) {
+        async initModel(modelId, runner=undefined) {
             this.setInfoPanel(`Initializing model ${modelId}...`, true);
             this.turnButtons(false);
-            await this.runner.loadModel(modelId);
+            if (runner === undefined) {
+                runner = this.runner;
+            }
+            await runner.loadModel(modelId);
             this.tileSizes = this.runner.getDefaultTileSizes();
             this.tileOverlaps = this.runner.getDefaultTileOverlaps();
             this.turnButtons(true);
@@ -222,6 +240,24 @@ export default {
         },
         handleModelChange(model) {
             this.initModel(model.id);
+        },
+        async handleServerUrlChange(url) {
+            this.serverUrl = url;
+            const oldModelId = this.runner.modelId;
+            this.setInfoPanel("Initializing server...", true);
+            this.turnButtons(false);
+            try {
+                const runner = new ModelRunner(this.serverUrl);
+                await runner.init();
+                await this.initModel(oldModelId, runner);
+                this.runner = runner;
+                this.turnButtons(true);
+                this.setInfoPanel("");
+            } catch (e) {
+                this.setInfoPanel("Failed to initialize the server.", false, true);
+                this.turnButtons(false);
+                console.error(e);
+            }
         },
         async initImJoy() {
             function waitForImjoy(timeout = 10000) {
@@ -261,21 +297,19 @@ export default {
         async runModel() {
             this.setInfoPanel("Running the model...", true);
             this.buttonEnabledRun = false;
-            const inputSpec = this.runner.rdf.inputs[0];
-            const outputSpec = this.runner.rdf.outputs[0];
-            console.log("Spec input axes: " + inputSpec.axes);
-            console.log("Spec output axes: " + outputSpec.axes);
+            console.log("Spec input axes: " + this.inputSpec.axes);
+            console.log("Spec output axes: " + this.outputSpec.axes);
             try {
-                const img = await this.viewerControl.getImage({ format: "ndarray", all: true });
-                let imgAxes = inferImgAxesViaSpec(img._rshape, inputSpec.axes, true);
+                const img = await this.viewerControl.getImage();
+                let imgAxes = inferImgAxesViaSpec(img._rshape, this.inputSpec.axes, true);
                 console.log("Input image axes: " + imgAxes);
                 console.log("Reshape image to match the input spec.");
                 const tensor = imjoyToTfjs(img);
-                const reshapedTensor = mapAxes(tensor, imgAxes, inputSpec.axes);
+                const reshapedTensor = mapAxes(tensor, imgAxes, this.inputSpec.axes);
                 const outTensor = await this.runner.runTiles(
                     reshapedTensor,
-                    inputSpec,
-                    outputSpec,
+                    this.inputSpec,
+                    this.outputSpec,
                     this.tileSizes,
                     this.tileOverlaps,
                     (msg) => {
@@ -283,7 +317,7 @@ export default {
                     }
                 );
                 if (this.runner.isImg2Img()) {
-                    const imgsForShow = processForShow(outTensor, outputSpec.axes);
+                    const imgsForShow = processForShow(outTensor, this.outputSpec.axes);
                     await this.viewerControl.showImgs(imgsForShow, "output");
                 }
                 else {
@@ -306,17 +340,26 @@ export default {
             this.setInfoPanel("Loading test input...", true);
             if (rdfHas(this.runner.rdf, "test_inputs")) {
                 try {
-                    await this.viewerControl.viewFromUrl(this.runner.rdf.test_inputs[0]);
+                    await this.viewerControl.viewFromUrl(
+                        this.runner.rdf.test_inputs[0],
+                        this.inputSpec, this.outputSpec
+                    );
                 }
                 catch (err) {
                     console.log("Failed to load the test input, see console for details.");
                     console.error(err);
                     console.log("Loading sample input instead...");
-                    await this.viewerControl.viewFromUrl(this.runner.rdf.sample_inputs[0]);
+                    await this.viewerControl.viewFromUrl(
+                        this.runner.rdf.sample_inputs[0],
+                        this.inputSpec, this.outputSpec
+                    );
                 }
             }
             else if (rdfHas(this.runner.rdf, "sample_inputs")) {
-                await this.viewerControl.viewFromUrl(this.runner.rdf.sample_inputs[0]);
+                await this.viewerControl.viewFromUrl(
+                    this.runner.rdf.sample_inputs[0],
+                    this.inputSpec, this.outputSpec
+                );
             }
             else {
                 alert("No test input found.");
@@ -327,17 +370,27 @@ export default {
             this.setInfoPanel("Loading test output...", true);
             if (rdfHas(this.runner.rdf, "test_outputs")) {
                 try {
-                    await this.viewerControl.viewFromUrl(this.runner.rdf.test_outputs[0], "output");
+                    await this.viewerControl.viewFromUrl(
+                        this.runner.rdf.test_outputs[0],
+                        this.inputSpec, this.outputSpec,
+                        "output",
+                    );
                 }
                 catch (err) {
                     console.log("Failed to load the test output.");
                     console.error(err);
                     console.log("Loading sample output instead...");
-                    await this.viewerControl.viewFromUrl(this.runner.rdf.sample_outputs[0], "output");
+                    await this.viewerControl.viewFromUrl(
+                        this.runner.rdf.sample_outputs[0],
+                        this.inputSpec, this.outputSpec,
+                        "output");
                 }
             }
             else if (rdfHas(this.runner.rdf, "sample_outputs")) {
-                await this.viewerControl.viewFromUrl(this.runner.rdf.sample_outputs[0], "output");
+                await this.viewerControl.viewFromUrl(
+                    this.runner.rdf.sample_outputs[0],
+                    this.inputSpec, this.outputSpec,
+                    "output");
             }
             else {
                 await alert("No test output found.");

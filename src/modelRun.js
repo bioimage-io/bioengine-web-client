@@ -72,6 +72,7 @@ export class ModelRunner {
     this.rdf = null;
     this.modelTritonConfig = null;
     this.inputEndianness = null;
+    this.modelId = null;
   }
 
   async init() {
@@ -181,6 +182,7 @@ export class ModelRunner {
   }
 
   async loadModel(modelId) {
+    this.modelId = modelId;
     this.rdf = await this.tritonExecutor.loadModelRdf(modelId);
     const nickname = this.rdf.config.bioimageio.nickname;
     this.modelTritonConfig = await this.tritonExecutor.loadModelConfig(
@@ -192,7 +194,7 @@ export class ModelRunner {
   async submitTensor(tensor) {
     const reverseEnd = this.inputEndianness === "<";
     const reshapedImg = tfjsToImJoy(tensor, reverseEnd);
-    const modelId = this.rdf.id;
+    const modelId = this.modelId;
     const resp = await this.tritonExecutor.execute(modelId, [reshapedImg]);
     if (!resp.result.success) {
       throw new Error(resp.result.error);
