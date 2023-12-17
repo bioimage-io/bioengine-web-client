@@ -3,7 +3,7 @@
     <div class="model-selection">
         <div class="model-selection-line">
             <div class="model-selection-label">Model</div>
-            <ModelSelect />
+            <ModelSelect @model-selected="handleModelChange" />
         </div>
         <div class="model-selection-tips">ℹ️  Please visit <a href="https://bioimage.io/#/" target="_blank">bioimage.io</a> to view detailed information about the model.</div>
     </div>
@@ -219,6 +219,9 @@ export default {
             this.buttonEnabledOutput = on && (
                 rdfHas(this.runner.rdf, "test_outputs") ||
                 rdfHas(this.runner.rdf, "sample_outputs"));
+        },
+        handleModelChange(model) {
+            this.initModel(model.id);
         },
         async initImJoy() {
             function waitForImjoy(timeout = 10000) {

@@ -33,6 +33,11 @@ export default {
   mounted() {
     this.fetchModels()
   },
+  watch: {
+    currentModel() {
+      this.$emit('model-selected', this.currentModel)
+    }
+  },
   methods: {
     async fetchAvailableModels() {
       const modelListUrl = "https://raw.githubusercontent.com/bioimage-io/bioengine-model-runner/gh-pages/manifest.bioengine.json"
