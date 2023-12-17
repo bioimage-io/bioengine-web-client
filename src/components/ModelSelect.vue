@@ -3,7 +3,9 @@
     <Dropdown v-model="currentModel" :options="modelList" option-label="name">
       <template #value="slotProps">
         <div v-if="slotProps.value">
-          <div>{{ slotProps.value.nickname_icon}} {{ slotProps.value.name }}</div>
+          <div>
+            {{ slotProps.value.nickname_icon}} {{ slotProps.value.name }}
+          </div>
         </div>
         <span v-else>
           {{ slotProps.placeholder }}
@@ -11,12 +13,13 @@
       </template>
       <template #option="slotProps">
         <div>
-          <div>{{ slotProps.option.nickname_icon}} {{ slotProps.option.name }}</div>
+          <div :title="slotProps.option.description">
+            {{ slotProps.option.nickname_icon}} {{ slotProps.option.name }}
+          </div>
         </div>
       </template>
     </Dropdown>
   </div>
-
 </template>
 
 <script>
