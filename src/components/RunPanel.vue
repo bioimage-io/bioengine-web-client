@@ -1,5 +1,12 @@
 <template>
   <div id="test-run-body">
+    <div class="model-selection">
+        <div class="model-selection-line">
+            <div class="model-selection-label">Model</div>
+            <ModelSelect />
+        </div>
+        <div class="model-selection-tips">ℹ️  Please visit <a href="https://bioimage.io/#/" target="_blank">bioimage.io</a> to view detailed information about the model.</div>
+    </div>
     <div id="buttons">
       <Button
         :disabled="!this.buttonEnabledInput"
@@ -65,6 +72,24 @@
 #info {
     margin-top: 10px;
 }
+.model-selection {
+    margin-bottom: 10px;
+}
+.model-selection-line {
+    display: flex;
+}
+.model-selection-label {
+    display: inline-block;
+    margin-right: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.model-selection-tips {
+    padding: 5px;
+}
+
 </style>
 
 <script>
@@ -78,6 +103,7 @@ import HideContainer from "./HideContainer.vue";
 import OverlayContainer from "./OverlayContainer.vue";
 import AdvanceSetting from "./AdvanceSetting.vue";
 import LoadingAnimation from "./LoadingAnimation.vue";
+import ModelSelect from "./ModelSelect.vue";
 import { ModelRunner } from "../modelRun";
 import { ImagejJsController } from "../viewerControl";
 
@@ -165,6 +191,7 @@ export default {
             this.runner = runner;
             const defaultModelId = "10.5281/zenodo.5764892";
             await this.initModel(defaultModelId);
+            this.turnButtons(false)
             if (this.$props.ij) {
                 this.ij = props.ij;
             } else {
@@ -173,22 +200,25 @@ export default {
             }
             this.viewerControl = new ImagejJsController(this.ij);
             this.setInfoPanel("");
+            this.turnButtons(true);
         },
         async initModel(modelId) {
             this.setInfoPanel(`Initializing model ${modelId}...`, true);
+            this.turnButtons(false);
             await this.runner.loadModel(modelId);
             this.tileSizes = this.runner.getDefaultTileSizes();
             this.tileOverlaps = this.runner.getDefaultTileOverlaps();
-            this.buttonEnabledRun = true;
-            if (rdfHas(this.runner.rdf, "test_inputs") ||
-                rdfHas(this.runner.rdf, "sample_inputs")) {
-                this.buttonEnabledInput = true;
-            }
-            if (rdfHas(this.runner.rdf, "test_outputs") ||
-                rdfHas(this.runner.rdf, "sample_outputs")) {
-                this.buttonEnabledOutput = true;
-            }
+            this.turnButtons(true);
             this.setInfoPanel("");
+        },
+        turnButtons(on) {
+            this.buttonEnabledRun = on;
+            this.buttonEnabledInput = on && (
+                rdfHas(this.runner.rdf, "test_inputs") ||
+                rdfHas(this.runner.rdf, "sample_inputs"));
+            this.buttonEnabledOutput = on && (
+                rdfHas(this.runner.rdf, "test_outputs") ||
+                rdfHas(this.runner.rdf, "sample_outputs"));
         },
         async initImJoy() {
             function waitForImjoy(timeout = 10000) {
@@ -312,6 +342,6 @@ export default {
             this.setInfoPanel("");
         }
     },
-    components: { HideContainer, OverlayContainer, AdvanceSetting, LoadingAnimation }
+    components: { HideContainer, OverlayContainer, AdvanceSetting, LoadingAnimation, ModelSelect }
 };
 </script>
