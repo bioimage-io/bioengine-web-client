@@ -32,13 +32,7 @@ class TritonExecutor {
 
   async loadModelRdf(modelId) {
     let ret;
-    try {
-      ret = await this.execute(modelId, undefined, true);
-    } catch (err) {
-      alert("Failed to load the model, see console for details.");
-      this.setInfoPanel("Failed to load the model.", false, true);
-      throw err;
-    }
+    ret = await this.execute(modelId, undefined, true);
     const rdf = ret.result.rdf;
     return rdf;
   }
@@ -151,7 +145,7 @@ export class ModelRunner {
     const outputSpec = this.rdf.outputs[0];
     const axes = inputSpec.axes;
     let overlaps = {};
-    if (outputSpec.halo && this.fixedTileSize === false) {
+    if (outputSpec.halo && this.fixedTileSize() === false) {
       axes.split("").map((a, i) => {
         if (outputSpec.axes.includes(a) && a !== "z") {
           overlaps[a] = 2 * outputSpec.halo[i];

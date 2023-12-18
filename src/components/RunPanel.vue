@@ -223,20 +223,32 @@ export default {
             if (runner === undefined) {
                 runner = this.runner;
             }
-            await runner.loadModel(modelId);
-            this.tileSizes = this.runner.getDefaultTileSizes();
-            this.tileOverlaps = this.runner.getDefaultTileOverlaps();
+            try {
+                await runner.loadModel(modelId);
+            } catch (e) {
+                this.setInfoPanel(`Failed to load model ${modelId}.`, false, true);
+                console.error(e);
+                throw e;
+            }
+            this.tileSizes = runner.getDefaultTileSizes();
+            this.tileOverlaps = runner.getDefaultTileOverlaps();
             this.turnButtons(true);
             this.setInfoPanel("");
         },
         turnButtons(on) {
-            this.buttonEnabledRun = on;
-            this.buttonEnabledInput = on && (
-                rdfHas(this.runner.rdf, "test_inputs") ||
-                rdfHas(this.runner.rdf, "sample_inputs"));
-            this.buttonEnabledOutput = on && (
-                rdfHas(this.runner.rdf, "test_outputs") ||
-                rdfHas(this.runner.rdf, "sample_outputs"));
+            if (!this.runner.rdf) {
+                this.buttonEnabledRun = false;
+                this.buttonEnabledInput = false;
+                this.buttonEnabledOutput = false;
+            } else {
+                this.buttonEnabledRun = on;
+                this.buttonEnabledInput = on && (
+                    rdfHas(this.runner.rdf, "test_inputs") ||
+                    rdfHas(this.runner.rdf, "sample_inputs"));
+                this.buttonEnabledOutput = on && (
+                    rdfHas(this.runner.rdf, "test_outputs") ||
+                    rdfHas(this.runner.rdf, "sample_outputs"));
+            }
         },
         handleModelChange(model) {
             this.initModel(model.id);
