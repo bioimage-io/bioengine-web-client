@@ -131,9 +131,12 @@ export function imjoyToTfjs(arr) {
   return tensor;
 }
 
-export function tfjsToImJoy(tensor, reverseEnd = false) {
+export function tfjsToImJoy(tensor, reverseEnd = false, dtype = null) {
   const data = tensor.dataSync();
-  const Constructor = getConstructor(tensor._rdtype);
+  if (dtype === null) {
+    dtype = tensor._rdtype;
+  }
+  const Constructor = getConstructor(dtype);
   let casted = new Constructor(data.length);
   for (let i = 0; i < data.length; i++) {
     casted[i] = data[i];
@@ -146,9 +149,9 @@ export function tfjsToImJoy(tensor, reverseEnd = false) {
   const value = new Uint8Array(casted.buffer);
   const ijarr = {
     _rtype: "ndarray",
-    _rdtype: tensor._rdtype,
+    _rdtype: dtype,
     _rshape: tensor.shape,
-    _rvalue: value
+    _rvalue: value,
   };
   return ijarr;
 }
@@ -204,7 +207,7 @@ export function mapAxes(inputArray, inputAxes, outputAxes) {
 
   let newArray = pick(inputArray, pickIdxes);
 
-  outputAxes.split("").forEach(axName => {
+  outputAxes.split("").forEach((axName) => {
     if (!inputAxes.includes(axName)) {
       newArray = tf.reshape(newArray, newArray.shape.concat([1]));
       axes.push(axName);
@@ -283,7 +286,7 @@ export function splitForShow(tensor, specAxes) {
         newImgs.push(mapAxes(tensor, specAxes, "cyx"));
       } else {
         // split by c
-        splitBy(tensor, "c", specAxes).map(arrs => {
+        splitBy(tensor, "c", specAxes).map((arrs) => {
           const subAxes = specAxes.replace("c", "");
           newImgs = newImgs.concat(splitForShow(arrs, subAxes));
         });
@@ -291,7 +294,7 @@ export function splitForShow(tensor, specAxes) {
     } else {
       // b,c,y,x or b,z,y,x
       // split by b
-      splitBy(tensor, "b", specAxes).map(arrs => {
+      splitBy(tensor, "b", specAxes).map((arrs) => {
         const subAxes = specAxes.replace("b", "");
         newImgs = newImgs.concat(splitForShow(arrs, subAxes));
       });
@@ -299,7 +302,7 @@ export function splitForShow(tensor, specAxes) {
   } else if (specAxes.length === 5) {
     // b,c,z,y,x
     // split by b
-    splitBy(tensor, "b", specAxes).map(arrs => {
+    splitBy(tensor, "b", specAxes).map((arrs) => {
       const subAxes = specAxes.replace("b", "");
       newImgs = newImgs.concat(splitForShow(arrs, subAxes));
     });
@@ -331,7 +334,7 @@ export function processForShow(tensor, specAxes) {
       splitedArrs = [tensor];
     }
   }
-  return splitedArrs.map(arr => {
+  return splitedArrs.map((arr) => {
     arr._rdtype = tensor._rdtype;
     return tfjsToImJoy(arr);
   });
@@ -355,8 +358,8 @@ function getNpyDtype(buffer) {
 export async function getNpyEndianness(url) {
   const resp = await fetch(url, {
     headers: {
-      Range: "bytes=0-999"
-    }
+      Range: "bytes=0-999",
+    },
   });
   if (!resp.ok) {
     console.error(resp);
@@ -436,7 +439,7 @@ export class ImgPadder {
     } else {
       res = tf.slice(
         tensor,
-        pad.map(p => p[0]),
+        pad.map((p) => p[0]),
         tensor.shape.map((s, i) => s - pad[i][0] - pad[i][1])
       );
     }
@@ -504,7 +507,7 @@ export class ImgTile {
 }
 
 const cartesian = (...a) =>
-  a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
+  a.reduce((a, b) => a.flatMap((d) => b.map((e) => [d, e].flat())));
 
 export class ImgTiler {
   constructor(imgShape, tileShape, overlap = undefined) {
@@ -533,14 +536,14 @@ export class ImgTiler {
     const imgShape = this.imgShape;
     const nTiles = this.getNTiles();
     const tileIndexes = cartesian(
-      ...nTiles.map(n => Array.from(Array(n).keys()))
+      ...nTiles.map((n) => Array.from(Array(n).keys()))
     );
-    const starts = tileIndexes.map(idx => {
+    const starts = tileIndexes.map((idx) => {
       return idx.map((i, j) => {
         return i * (tileShape[j] - overlap[j]);
       });
     });
-    const ends = starts.map(s => {
+    const ends = starts.map((s) => {
       return s.map((v, i) => {
         return Math.min(v + tileShape[i], imgShape[i]);
       });
@@ -560,7 +563,7 @@ export class TileMerger {
   mergeTiles(tiles) {
     for (let d = 0; d < this.imgShape.length; d++) {
       const newTiles = [];
-      const key = t => {
+      const key = (t) => {
         const res = [];
         t.indexes.map((idx, j) => {
           if (j !== d) {

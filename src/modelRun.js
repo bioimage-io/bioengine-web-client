@@ -58,6 +58,16 @@ class TritonExecutor {
     });
     return ret;
   }
+
+  async runCellpose(array, diameter = 30) {
+    const ret = await this.triton.execute({
+      inputs: [array, { diameter: diameter }],
+      model_name: "cellpose-python",
+      decode_json: true,
+      _rkwargs: true,
+    });
+    return ret;
+  }
 }
 
 export class ModelRunner {
@@ -177,23 +187,67 @@ export class ModelRunner {
 
   async loadModel(modelId) {
     this.modelId = modelId;
-    this.rdf = await this.tritonExecutor.loadModelRdf(modelId);
-    const nickname = this.rdf.config.bioimageio.nickname;
-    this.modelTritonConfig = await this.tritonExecutor.loadModelConfig(
-      nickname
-    );
-    this.detectInputEndianness();
+    if (modelId === "cellpose-python") {
+      this.rdf = await this.loadCellposeRdf();
+      this.modelTritonConfig = await this.tritonExecutor.loadModelConfig(
+        modelId
+      );
+    } else {
+      this.rdf = await this.tritonExecutor.loadModelRdf(modelId);
+      const nickname = this.rdf.config.bioimageio.nickname;
+      this.modelTritonConfig = await this.tritonExecutor.loadModelConfig(
+        nickname
+      );
+      this.detectInputEndianness();
+    }
+  }
+
+  async loadCellposeRdf() {
+    // fake rdf for cellpose
+    const rdf = {
+      id: "cellpose-python",
+      name: "Cellpose",
+      nickname: "cellpose-python",
+      nickname_icon: "🌸",
+      description: "Cellpose model for segmenting nuclei and cytoplasms.",
+      inputs: [
+        {
+          axes: "cyx",
+          data_type: "float32",
+          shape: {
+            min: [1, 64, 64],
+            step: [1, 16, 16],
+          },
+        },
+      ],
+      outputs: [
+        {
+          axes: "cyx",
+        },
+      ],
+      sample_inputs: [
+        "https://zenodo.org/api/records/6647674/files/sample_input_0.tif/content",
+      ],
+    };
+    return rdf;
   }
 
   async submitTensor(tensor) {
     const reverseEnd = this.inputEndianness === "<";
-    const reshapedImg = tfjsToImJoy(tensor, reverseEnd);
+    const data_type = this.rdf.inputs[0].data_type;
+    const reshapedImg = tfjsToImJoy(tensor, reverseEnd, data_type);
     const modelId = this.modelId;
-    const resp = await this.tritonExecutor.execute(modelId, [reshapedImg]);
-    if (!resp.result.success) {
-      throw new Error(resp.result.error);
+    let outImg;
+    if (modelId === "cellpose-python") {
+      const resp = await this.tritonExecutor.runCellpose(reshapedImg);
+      outImg = resp.mask;
+    } else {
+      const resp = await this.tritonExecutor.execute(modelId, [reshapedImg]);
+      if (!resp.result.success) {
+        throw new Error(resp.result.error);
+      }
+      outImg = resp.result.outputs[0];
     }
-    const outImg = resp.result.outputs[0];
     return outImg;
   }
 

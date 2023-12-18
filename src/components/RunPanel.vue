@@ -3,7 +3,7 @@
     <div class="model-selection">
         <div class="model-selection-line">
             <div class="model-selection-label">Model</div>
-            <ModelSelect @model-selected="handleModelChange" />
+            <ModelSelect @model-selected="handleModelChange" :additional-models="additionalModels" />
         </div>
         <div class="model-selection-tips">ℹ️  Please visit <a href="https://bioimage.io/#/" target="_blank">bioimage.io</a> to view detailed information about the model.</div>
     </div>
@@ -133,6 +133,7 @@ export default {
         tileOverlaps: { x: 0, y: 0, z: 0 },
         runner: null,
         serverUrl: "https://hypha.bioimage.io",
+        additionalModels: [],
     }),
     computed: {
         infoColor() {
@@ -204,6 +205,8 @@ export default {
             const runner = new ModelRunner(this.serverUrl);
             await runner.init();
             this.runner = runner;
+            const additionalModels = [await this.runner.loadCellposeRdf()];
+            this.additionalModels = additionalModels;
             const defaultModelId = "10.5281/zenodo.5764892";
             await this.initModel(defaultModelId);
             this.turnButtons(false)
