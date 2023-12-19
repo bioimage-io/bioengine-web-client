@@ -2,6 +2,10 @@
 
 Standalone web client for run models on Bioengine.
 
+Online demo: https://bioimage-io.github.io/bioengine-web-client/
+
+![demo](./screenshot_bwc.png)
+
 Functionality:
 
 - Using ImageJ.js as a viewer and preprocessor.
