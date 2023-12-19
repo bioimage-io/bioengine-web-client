@@ -32,13 +32,7 @@ class TritonExecutor {
 
   async loadModelRdf(modelId) {
     let ret;
-    try {
-      ret = await this.execute(modelId, undefined, true);
-    } catch (err) {
-      alert("Failed to load the model, see console for details.");
-      this.setInfoPanel("Failed to load the model.", false, true);
-      throw err;
-    }
+    ret = await this.execute(modelId, undefined, true);
     const rdf = ret.result.rdf;
     return rdf;
   }
@@ -61,6 +55,17 @@ class TritonExecutor {
       ],
       model_name: "bioengine-model-runner",
       serialization: "imjoy",
+    });
+    return ret;
+  }
+
+  async runCellpose(array, additionalParameters = {}) {
+    console.log("Running cellpose with parameters: ", additionalParameters);
+    const ret = await this.triton.execute({
+      inputs: [array, additionalParameters],
+      model_name: "cellpose-python",
+      decode_json: true,
+      _rkwargs: true,
     });
     return ret;
   }
@@ -151,7 +156,7 @@ export class ModelRunner {
     const outputSpec = this.rdf.outputs[0];
     const axes = inputSpec.axes;
     let overlaps = {};
-    if (outputSpec.halo && this.fixedTileSize === false) {
+    if (outputSpec.halo && this.fixedTileSize() === false) {
       axes.split("").map((a, i) => {
         if (outputSpec.axes.includes(a) && a !== "z") {
           overlaps[a] = 2 * outputSpec.halo[i];
@@ -183,31 +188,98 @@ export class ModelRunner {
 
   async loadModel(modelId) {
     this.modelId = modelId;
-    this.rdf = await this.tritonExecutor.loadModelRdf(modelId);
-    const nickname = this.rdf.config.bioimageio.nickname;
-    this.modelTritonConfig = await this.tritonExecutor.loadModelConfig(
-      nickname
-    );
-    this.detectInputEndianness();
+    if (modelId === "cellpose-python") {
+      this.rdf = await this.loadCellposeRdf();
+      this.modelTritonConfig = await this.tritonExecutor.loadModelConfig(
+        modelId
+      );
+    } else {
+      this.rdf = await this.tritonExecutor.loadModelRdf(modelId);
+      const nickname = this.rdf.config.bioimageio.nickname;
+      this.modelTritonConfig = await this.tritonExecutor.loadModelConfig(
+        nickname
+      );
+      this.detectInputEndianness();
+    }
   }
 
-  async submitTensor(tensor) {
+  async loadCellposeRdf() {
+    // fake rdf for cellpose
+    const rdf = {
+      id: "cellpose-python",
+      name: "Cellpose",
+      nickname: "cellpose-python",
+      nickname_icon: "🌸",
+      description: "Cellpose model for segmenting nuclei and cytoplasms.",
+      inputs: [
+        {
+          axes: "cyx",
+          data_type: "float32",
+          shape: {
+            min: [1, 64, 64],
+            step: [1, 16, 16],
+          },
+        },
+      ],
+      outputs: [
+        {
+          axes: "cyx",
+        },
+      ],
+      sample_inputs: [
+        "https://zenodo.org/api/records/6647674/files/sample_input_0.tif/content",
+      ],
+      additional_parameters: [
+        {
+          name: "Cellpose Parameters",
+          parameters: [
+            {
+              name: "diameter",
+              type: "number",
+              default: 30,
+              description: "Diameter of the nuclei in pixels.",
+            },
+            {
+              name: "model_type",
+              type: "string",
+              default: "nuclei",
+              description: "Type of cells to segment.",
+              enum: ["nuclei", "cyto"],
+            },
+          ],
+        },
+      ],
+    };
+    return rdf;
+  }
+
+  async submitTensor(tensor, additionalParameters = undefined) {
     const reverseEnd = this.inputEndianness === "<";
-    const reshapedImg = tfjsToImJoy(tensor, reverseEnd);
+    const data_type = this.rdf.inputs[0].data_type;
+    const reshapedImg = tfjsToImJoy(tensor, reverseEnd, data_type);
     const modelId = this.modelId;
-    const resp = await this.tritonExecutor.execute(modelId, [reshapedImg]);
-    if (!resp.result.success) {
-      throw new Error(resp.result.error);
+    let outImg;
+    if (modelId === "cellpose-python") {
+      const resp = await this.tritonExecutor.runCellpose(
+        reshapedImg,
+        additionalParameters
+      );
+      outImg = resp.mask;
+    } else {
+      const resp = await this.tritonExecutor.execute(modelId, [reshapedImg]);
+      if (!resp.result.success) {
+        throw new Error(resp.result.error);
+      }
+      outImg = resp.result.outputs[0];
     }
-    const outImg = resp.result.outputs[0];
     return outImg;
   }
 
-  async runOneTensor(tensor, padder) {
+  async runOneTensor(tensor, padder, additionalParameters = undefined) {
     console.log("Input tile shape: " + tensor.shape);
     const [paddedTensor, padArr] = padder.pad(tensor);
     console.log("Padded tile shape: " + paddedTensor.shape);
-    let outImg = await this.submitTensor(paddedTensor);
+    let outImg = await this.submitTensor(paddedTensor, additionalParameters);
     console.log("Output tile shape: " + outImg._rshape);
     const outTensor = imjoyToTfjs(outImg);
     const isImg2Img =
@@ -227,6 +299,7 @@ export class ModelRunner {
     outputSpec,
     tileSizes,
     tileOverlaps,
+    additionalParameters = undefined,
     reportFunc = undefined
   ) {
     if (!reportFunc) {
@@ -260,7 +333,11 @@ export class ModelRunner {
       const tile = inTiles[i];
       console.log(tile);
       tile.slice(tensor);
-      const outTensor = await this.runOneTensor(tile.data, padder);
+      const outTensor = await this.runOneTensor(
+        tile.data,
+        padder,
+        additionalParameters
+      );
       const outTile = new ImgTile(tile.starts, tile.ends, tile.indexes);
       outTile.data = outTensor;
       outTiles.push(outTile);

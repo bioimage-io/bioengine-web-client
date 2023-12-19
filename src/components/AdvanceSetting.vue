@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="advance-setting-container">
     <div class="server-setting">
       <h3>Settings for server</h3>
       <label class="field-label">Server URL</label>
@@ -61,6 +61,10 @@
 </template>
 
 <style scoped>
+.advance-setting-container {
+  padding-left: 20px;
+  padding-bottom: 20px;
+}
 .field-label {
   display: block;
   margin-bottom: 5px;
