@@ -1,6 +1,7 @@
 # Bioengine web client
 
 Standalone web client for run models on Bioengine.
+Directly run the advanced deep-learning models in the [bioimage.io](https://bioimage.io/#/) model zoo 🦒!
 
 Online demo: https://bioimage-io.github.io/bioengine-web-client/
 
