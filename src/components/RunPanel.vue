@@ -3,7 +3,7 @@
     <div class="model-selection">
         <div class="model-selection-line">
             <div class="model-selection-label">Model</div>
-            <ModelSelect @model-selected="handleModelChange" :additional-models="additionalModels" />
+            <ModelSelect :open="this.modelSelectEnable" @model-selected="handleModelChange" :additional-models="additionalModels" />
         </div>
         <div class="model-selection-tips">ℹ️  Please visit <a href="https://bioimage.io/#/" target="_blank">bioimage.io</a> to view detailed information about the model.</div>
     </div>
@@ -28,6 +28,11 @@
         Show reference output
       </Button>
     </div>
+    <ModelParameters
+      :parameters="this.additionalParameters"
+      :parameterValues="this.additionalParameterValues"
+      :overlay="waiting"
+    />
     <HideContainer :summary="'Advanced settings'">
       <OverlayContainer :open="waiting">
         <AdvanceSetting
@@ -106,6 +111,7 @@ import OverlayContainer from "./OverlayContainer.vue";
 import AdvanceSetting from "./AdvanceSetting.vue";
 import LoadingAnimation from "./LoadingAnimation.vue";
 import ModelSelect from "./ModelSelect.vue";
+import ModelParameters from "./ModelParameters.vue";
 import { ModelRunner } from "../modelRun";
 import { ImagejJsController } from "../viewerControl";
 
@@ -129,11 +135,13 @@ export default {
         buttonEnabledRun: false,
         buttonEnabledInput: false,
         buttonEnabledOutput: false,
+        modelSelectEnable: false,
         tileSizes: { x: 0, y: 0, z: 0 },
         tileOverlaps: { x: 0, y: 0, z: 0 },
         runner: null,
-        serverUrl: "https://hypha.bioimage.io",
+        serverUrl: "https://ai.imjoy.io",
         additionalModels: [],
+        additionalParameterValues: {}
     }),
     computed: {
         infoColor() {
@@ -151,28 +159,36 @@ export default {
             return this.runner.modelTritonConfig;
         },
         inputMinShape() {
-            if (!this.runner) {
+            if (!this?.runner?.rdf) {
                 return {};
             }
             return this.runner.getInputMinShape();
         },
         inputMaxShape() {
-            if (!this.runner) {
+            if (!this?.runner?.rdf) {
                 return {};
             }
             return this.runner.getInputMaxShape();
         },
         inputSpec() {
-            if (!this.runner) {
+            if (!this?.runner?.rdf) {
                 return {};
             }
             return this.runner.rdf.inputs[0];
         },
         outputSpec() {
-            if (!this.runner) {
+            if (!this?.runner?.rdf) {
                 return {};
             }
             return this.runner.rdf.outputs[0];
+        },
+        additionalParameters() {
+            if (!this?.runner?.rdf) {
+                return [];
+            }
+            const params = this?.runner?.rdf?.additional_parameters || [];
+            console.log("Additional parameters: ", params);
+            return params
         },
     },
     watch: {
@@ -193,7 +209,17 @@ export default {
                 console.log(oldObj, newObj);
             },
             deep: true
-        }
+        },
+        additionalParameters() {
+            const initValues = {};
+            for (const paramGroup of this.additionalParameters) {
+                for (const param of paramGroup.parameters) {
+                    initValues[param.name] = param.default;
+                }
+            }
+            console.log("Init additional parameters", initValues)
+            this.additionalParameterValues = initValues;
+        },
     },
     mounted() {
         this.init();
@@ -221,11 +247,11 @@ export default {
             this.turnButtons(true);
         },
         async initModel(modelId, runner=undefined) {
-            this.setInfoPanel(`Initializing model ${modelId}...`, true);
-            this.turnButtons(false);
             if (runner === undefined) {
                 runner = this.runner;
             }
+            this.setInfoPanel(`Initializing model ${modelId}...`, true);
+            this.turnButtons(false);
             try {
                 await runner.loadModel(modelId);
             } catch (e) {
@@ -239,10 +265,11 @@ export default {
             this.setInfoPanel("");
         },
         turnButtons(on) {
-            if (!this.runner.rdf) {
+            if (!this?.runner?.rdf) {
                 this.buttonEnabledRun = false;
                 this.buttonEnabledInput = false;
                 this.buttonEnabledOutput = false;
+                this.modelSelectEnable = false;
             } else {
                 this.buttonEnabledRun = on;
                 this.buttonEnabledInput = on && (
@@ -251,10 +278,13 @@ export default {
                 this.buttonEnabledOutput = on && (
                     rdfHas(this.runner.rdf, "test_outputs") ||
                     rdfHas(this.runner.rdf, "sample_outputs"));
+                this.modelSelectEnable = on;
             }
         },
         handleModelChange(model) {
-            this.initModel(model.id);
+            if (this?.runner?.rdf) {
+                this.initModel(model.id);
+            }
         },
         async handleServerUrlChange(url) {
             this.serverUrl = url;
@@ -327,9 +357,10 @@ export default {
                     this.outputSpec,
                     this.tileSizes,
                     this.tileOverlaps,
+                    this.additionalParameterValues,
                     (msg) => {
                         this.setInfoPanel(msg, true);
-                    }
+                    },
                 );
                 if (this.runner.isImg2Img()) {
                     const imgsForShow = processForShow(outTensor, this.outputSpec.axes);
@@ -413,6 +444,6 @@ export default {
             this.setInfoPanel("");
         }
     },
-    components: { HideContainer, OverlayContainer, AdvanceSetting, LoadingAnimation, ModelSelect }
+    components: { HideContainer, OverlayContainer, AdvanceSetting, LoadingAnimation, ModelSelect, ModelParameters }
 };
 </script>

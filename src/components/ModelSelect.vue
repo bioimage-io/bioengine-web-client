@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Dropdown v-model="currentModel" :options="modelList" option-label="name">
+    <Dropdown :disabled="!open" v-model="currentModel" :options="modelList" option-label="name">
       <template #value="slotProps">
         <div v-if="slotProps.value">
           <div>
@@ -25,6 +25,10 @@
 <script>
 export default {
   props: {
+    open: {
+      type: Boolean,
+      default: false
+    },
     additionalModels: {
       type: Array,
       default: () => []

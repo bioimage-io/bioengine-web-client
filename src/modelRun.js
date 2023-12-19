@@ -59,9 +59,10 @@ class TritonExecutor {
     return ret;
   }
 
-  async runCellpose(array, diameter = 30) {
+  async runCellpose(array, additionalParameters = {}) {
+    console.log("Running cellpose with parameters: ", additionalParameters);
     const ret = await this.triton.execute({
-      inputs: [array, { diameter: diameter }],
+      inputs: [array, additionalParameters],
       model_name: "cellpose-python",
       decode_json: true,
       _rkwargs: true,
@@ -228,18 +229,41 @@ export class ModelRunner {
       sample_inputs: [
         "https://zenodo.org/api/records/6647674/files/sample_input_0.tif/content",
       ],
+      additional_parameters: [
+        {
+          name: "Cellpose Parameters",
+          parameters: [
+            {
+              name: "diameter",
+              type: "number",
+              default: 30,
+              description: "Diameter of the nuclei in pixels.",
+            },
+            {
+              name: "model_type",
+              type: "string",
+              default: "nuclei",
+              description: "Type of cells to segment.",
+              enum: ["nuclei", "cyto"],
+            },
+          ],
+        },
+      ],
     };
     return rdf;
   }
 
-  async submitTensor(tensor) {
+  async submitTensor(tensor, additionalParameters = undefined) {
     const reverseEnd = this.inputEndianness === "<";
     const data_type = this.rdf.inputs[0].data_type;
     const reshapedImg = tfjsToImJoy(tensor, reverseEnd, data_type);
     const modelId = this.modelId;
     let outImg;
     if (modelId === "cellpose-python") {
-      const resp = await this.tritonExecutor.runCellpose(reshapedImg);
+      const resp = await this.tritonExecutor.runCellpose(
+        reshapedImg,
+        additionalParameters
+      );
       outImg = resp.mask;
     } else {
       const resp = await this.tritonExecutor.execute(modelId, [reshapedImg]);
@@ -251,11 +275,11 @@ export class ModelRunner {
     return outImg;
   }
 
-  async runOneTensor(tensor, padder) {
+  async runOneTensor(tensor, padder, additionalParameters = undefined) {
     console.log("Input tile shape: " + tensor.shape);
     const [paddedTensor, padArr] = padder.pad(tensor);
     console.log("Padded tile shape: " + paddedTensor.shape);
-    let outImg = await this.submitTensor(paddedTensor);
+    let outImg = await this.submitTensor(paddedTensor, additionalParameters);
     console.log("Output tile shape: " + outImg._rshape);
     const outTensor = imjoyToTfjs(outImg);
     const isImg2Img =
@@ -275,6 +299,7 @@ export class ModelRunner {
     outputSpec,
     tileSizes,
     tileOverlaps,
+    additionalParameters = undefined,
     reportFunc = undefined
   ) {
     if (!reportFunc) {
@@ -308,7 +333,11 @@ export class ModelRunner {
       const tile = inTiles[i];
       console.log(tile);
       tile.slice(tensor);
-      const outTensor = await this.runOneTensor(tile.data, padder);
+      const outTensor = await this.runOneTensor(
+        tile.data,
+        padder,
+        additionalParameters
+      );
       const outTile = new ImgTile(tile.starts, tile.ends, tile.indexes);
       outTile.data = outTensor;
       outTiles.push(outTile);
