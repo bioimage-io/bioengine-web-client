@@ -61,6 +61,9 @@
 </template>
 
 <style scoped>
+#test-run-body {
+    padding: 10px;
+}
 #ij-container {
     height: 600px;
     border: 1px solid #ccc;
