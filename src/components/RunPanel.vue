@@ -46,7 +46,7 @@
       </div>
       <div id="info-panel" :style="{ color: infoColor }">{{ this.info }}</div>
     </div>
-    <div id="ij-container" v-if="$props.ij === null"></div>
+    <div id="ij-container" v-if="newIjWindow"></div>
   </div>
 </template>
 
@@ -120,6 +120,7 @@ export default {
     setup: () => {
         const store = useStore();
 
+        const newIjWindow = ref(true)
         const waiting = ref(false);
         const error = ref(false);
         const info = ref("");
@@ -222,13 +223,8 @@ export default {
             setInfoPanel,
             turnButtons,
             initModel,
+            newIjWindow,
         }
-    },
-    props: {
-        ij: {
-            type: Object,
-            default: null,
-        },
     },
     data: () => ({
         ij: null,
@@ -260,12 +256,8 @@ export default {
             const defaultModelId = "10.5281/zenodo.5764892";
             await this.initModel(defaultModelId);
             this.turnButtons(false)
-            if (this.$props.ij) {
-                this.ij = props.ij;
-            } else {
-                this.setInfoPanel("Initializing ImageJ.JS ...", true);
-                await this.initImageJ();
-            }
+            this.setInfoPanel("Initializing ImageJ.JS ...", true);
+            await this.initImageJ();
             this.viewerControl = new ImagejJsController(this.ij);
             this.setInfoPanel("");
             this.turnButtons(true);
@@ -292,13 +284,19 @@ export default {
             this.api = api;
         },
         async initImageJ() {
-            console.log("Initializing IJ...");
-            this.ij = await this.api.createWindow({
-                src: "https://ij.imjoy.io/",
-                name: "ImageJ.JS",
-                fullscreen: false,
-                window_id: "ij-container"
-            });
+            const ij = await this.api.getWindow("ImageJ.JS");
+            if (ij) {
+                this.newIjWindow = false;
+                this.ij = ij
+            } else {
+                console.log("Create IJ window...");
+                this.ij = await this.api.createWindow({
+                    src: "https://ij.imjoy.io/",
+                    name: "ImageJ.JS",
+                    fullscreen: false,
+                    window_id: "ij-container"
+                });
+            }
         },
         async runModel() {
             const store = useStore();

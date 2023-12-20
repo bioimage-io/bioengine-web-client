@@ -99,7 +99,16 @@ async function initImJoy() {
     const imjoyRPC = await loadImJoyRPC();
     const api = await imjoyRPC.setupRPC({ name: "Bioengine web client" });
     window.app.imjoy = api;
-    api.export({ setup() {} });
+    function setup() {
+      api.log("Bioengine web client initialized.");
+    }
+    function runModel() {
+      const store = window.app.store;
+    }
+    api.export({
+      setup: setup,
+      runModel: runModel,
+    });
   } else {
     // start as an standalone app
     await setupImJoyApp();
