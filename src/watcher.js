@@ -17,22 +17,6 @@ export function setupStoreWatcher() {
     );
 
     watch(
-      () => parametersStore.additionalParametersSchema,
-      (newValue) => {
-        const initValues = {};
-        for (const paramGroup of parametersStore.additionalParametersSchema) {
-          for (const param of paramGroup.parameters) {
-            initValues[param.name] = param.default;
-          }
-        }
-        console.log("Init additional parameters", initValues);
-        parametersStore.$patch({
-          additionalParameters: initValues,
-        });
-      }
-    );
-
-    watch(
       [() => parametersStore.tileSizes, () => parametersStore.tileOverlaps],
       (oldObj, newObj) => {
         if (newObj.y !== newObj.x) {

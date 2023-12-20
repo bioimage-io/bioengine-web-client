@@ -11,7 +11,7 @@ import App from "./App.vue";
 import { useStore } from "./stores/global";
 import { useParametersStore } from "./stores/parameters";
 import { setupStoreWatcher } from "./watcher";
-import { useRunStore } from "./stores/run";
+import { useRunStore, waitState } from "./stores/run";
 
 window.app = {};
 
@@ -117,15 +117,22 @@ async function initImJoy() {
       const globalStore = window.app.store.global;
       return globalStore.models;
     }
-    function setModel(model) {
+    async function setModel(model) {
       const globalStore = window.app.store.global;
+      const runStore = window.app.store.run;
+      runStore.$patch({
+        modelInitialized: false,
+      });
       if (typeof model === "string") {
         for (const m of globalStore.models) {
           if (m.nickname === model || m.name === model || m.id === model) {
+            if (globalStore.currentModel === m) {
+              return;
+            }
             globalStore.$patch({
               currentModel: m,
             });
-            return;
+            break;
           }
         }
       } else {
@@ -133,6 +140,7 @@ async function initImJoy() {
           currentModel: model,
         });
       }
+      await waitState(() => runStore.modelInitialized, true);
     }
     api.export({
       setup: setup,

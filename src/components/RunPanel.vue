@@ -159,6 +159,7 @@ export default {
         const initModel = async (modelId, runner=undefined) => {
             const store = useStore();
             const parametersStore = useParametersStore();
+            const runStore = useRunStore();
             if (runner === undefined) {
                 runner = store.runner;
             }
@@ -176,8 +177,22 @@ export default {
                 tileOverlaps: runner.getDefaultTileOverlaps(),
                 additionalParametersSchema: runner?.rdf?.additional_parameters || [],
             })
+            // init additional parameters
+            const initValues = {};
+            for (const paramGroup of parametersStore.additionalParametersSchema) {
+              for (const param of paramGroup.parameters) {
+                initValues[param.name] = param.default;
+              }
+            }
+            console.log("Init additional parameters", initValues);
+            parametersStore.$patch({
+              additionalParameters: initValues,
+            });
             turnButtons(true);
             setInfoPanel("");
+            runStore.$patch({
+                modelInitialized: true,
+            })
         }
 
         const runModel = async () => {
