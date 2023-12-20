@@ -1,15 +1,15 @@
 <template>
-  <div v-if="parameters && (parameters.length > 0)">
+  <div v-if="pstore.additionalParametersSchema && (pstore.additionalParametersSchema.length > 0)">
     <HideContainer :summary="'Model parameters'">
       <OverlayContainer :open="overlay">
         <div class="model-params-container">
-          <div v-for="(paramGroup, index) in parameters" :key="index">
+          <div v-for="(paramGroup, index) in pstore.additionalParametersSchema" :key="index">
             <h3>{{ paramGroup.name }}</h3>
             <div v-for="(param, index2) in paramGroup.parameters" :key="index">
               <label class="field-label">{{ param.name }}</label>
-              <InputNumber showButtons v-if="param.type === 'number'" v-model="parameterValues[param.name]" />
-              <Dropdown :options="param.enum" v-else-if="param.enum" v-model="parameterValues[param.name]" />
-              <InputText v-else="param.type === 'string'" v-model="parameterValues[param.name]" />
+              <InputNumber showButtons v-if="param.type === 'number'" v-model="pstore.additionalParameters[param.name]" />
+              <Dropdown :options="param.enum" v-else-if="param.enum" v-model="pstore.additionalParameters[param.name]" />
+              <InputText v-else="param.type === 'string'" v-model="pstore.additionalParameters[param.name]" />
             </div>
           </div>
         </div>
@@ -31,13 +31,20 @@
 </style>
 
 <script>
+import { watch, ref } from 'vue';
 import HideContainer from './HideContainer.vue';
 import OverlayContainer from './OverlayContainer.vue';
+import { useParametersStore } from '../stores/parameters';
 
 export default {
+  setup() {
+    const parametersStore = useParametersStore();
+
+    return {
+      pstore: parametersStore,
+    }
+  },
   props: {
-    parameters: Array,
-    parameterValues: Object,
     overlay: Boolean,
   },
   components: {

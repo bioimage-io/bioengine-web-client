@@ -29,8 +29,8 @@ async function setupImJoyApp() {
     expose_api: true,
     imjoy_api: {},
   });
-  window.app.imjoy = app.imjoy;
   const api = app.imjoy.api;
+  window.app.imjoy = api;
   // if you want to let users to load new plugins, add a menu item
   app.addMenuItem({
     label: "➕ Load Plugin",
@@ -97,7 +97,8 @@ async function initImJoy() {
   // start as an plugin
   if (window.self !== window.top) {
     const imjoyRPC = await loadImJoyRPC();
-    const api = await imjoyRPC.setupRPC({ name: "BioImage.IO Chatbot" });
+    const api = await imjoyRPC.setupRPC({ name: "Bioengine web client" });
+    window.app.imjoy = api;
     api.export({ setup() {} });
   } else {
     // start as an standalone app

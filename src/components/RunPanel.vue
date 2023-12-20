@@ -29,8 +29,6 @@
       </Button>
     </div>
     <ModelParameters
-      :parameters="this.additionalParameters"
-      :parameterValues="this.additionalParameterValues"
       :overlay="waiting"
     />
     <HideContainer :summary="'Advanced settings'">
@@ -165,13 +163,14 @@ export default {
             try {
                 await runner.loadModel(modelId);
             } catch (e) {
-                this.setInfoPanel(`Failed to load model ${modelId}.`, false, true);
+                setInfoPanel(`Failed to load model ${modelId}.`, false, true);
                 console.error(e);
                 throw e;
             }
             parametersStore.$patch({
-                tileSizes: store.runner.getDefaultTileSizes(),
-                tileOverlaps: store.runner.getDefaultTileOverlaps(),
+                tileSizes: runner.getDefaultTileSizes(),
+                tileOverlaps: runner.getDefaultTileOverlaps(),
+                additionalParametersSchema: runner?.rdf?.additional_parameters || [],
             })
             turnButtons(true);
             setInfoPanel("");
@@ -192,7 +191,7 @@ export default {
                 store.$patch({
                     serverUrl: url,
                 });
-                const oldModelId = this.runner.modelId;
+                const oldModelId = store.runner.modelId;
                 setInfoPanel("Initializing server...", true);
                 turnButtons(false);
                 try {
@@ -289,7 +288,7 @@ export default {
             }
             const imjoy = await waitForImjoy();
             console.log("ImJoy is ready:", imjoy);
-            const api = window.app.imjoy.api;
+            const api = imjoy;
             this.api = api;
         },
         async initImageJ() {
@@ -370,7 +369,7 @@ export default {
             }
             else if (rdfHas(runner.rdf, "sample_inputs")) {
                 await this.viewerControl.viewFromUrl(
-                    this.runner.rdf.sample_inputs[0],
+                    runner.rdf.sample_inputs[0],
                     store.inputSpec, store.outputSpec
                 );
             }
@@ -408,7 +407,7 @@ export default {
                     "output");
             }
             else {
-                await alert("No test output found.");
+                alert("No test output found.");
             }
             this.setInfoPanel("");
         }

@@ -9,6 +9,7 @@ import {
   MeanTileMerger,
   getNpyEndianness,
 } from "./imgProcess";
+import { loadCellposeRdf } from "./utils";
 
 class TritonExecutor {
   constructor(serverUrl) {
@@ -189,7 +190,7 @@ export class ModelRunner {
   async loadModel(modelId) {
     this.modelId = modelId;
     if (modelId === "cellpose-python") {
-      this.rdf = await this.loadCellposeRdf();
+      this.rdf = loadCellposeRdf();
       this.modelTritonConfig = await this.tritonExecutor.loadModelConfig(
         modelId
       );

@@ -17,10 +17,10 @@ export function setupStoreWatcher() {
     );
 
     watch(
-      () => store.additionalParametrs,
+      () => parametersStore.additionalParametersSchema,
       (newValue) => {
         const initValues = {};
-        for (const paramGroup of store.additionalParameters) {
+        for (const paramGroup of parametersStore.additionalParametersSchema) {
           for (const param of paramGroup.parameters) {
             initValues[param.name] = param.default;
           }
