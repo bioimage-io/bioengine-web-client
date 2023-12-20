@@ -31,12 +31,12 @@ The following ImJoy API is supported:
 Usage example:
 
 ```javascript
-const client = api.getWindow("bioengine-web-client");
-console.log(await p.listModels());
+const client = await api.getWindow("bioengine-web-client");
+console.log(await client.listModels());
 // load cellpose model and run it
-await p.setModel("Cellpose");
-await p.setParameters({ diameter: 30, model_type: "cyto" });
-await p.runModel();
+await client.setModel("Cellpose");
+await client.setParameters({ diameter: 30, model_type: "cyto" });
+await client.runModel();
 ```
 
 ## Development
