@@ -5,6 +5,7 @@ export const useStore = defineStore("store", {
   state: () => ({
     serverUrl: "https://ai.imjoy.io",
     runner: null,
+    viewerControl: null,
     models: [],
     currentModel: null,
   }),

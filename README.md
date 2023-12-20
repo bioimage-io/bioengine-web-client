@@ -15,6 +15,30 @@ Functionality:
 - Image tiler allows to run model on large images.
 - Export ImJoy API for using as a plugin in ImJoy.
 
+## ImJoy API
+
+This web client supports two-way integration with ImJoy, meaning you can either use it as an ImJoy plugin or load other ImJoy plugins into it.
+
+The following ImJoy API is supported:
+
+| API           | Description                                           | Parameters              |
+| ------------- | ----------------------------------------------------- | ----------------------- |
+| runModel      | Run model on current image(in the viewer)             |                         |
+| setParameters | Set model parameters                                  | `parameters: object`    |
+| listModels    | List all models, return an array of model rdf objects |                         |
+| setModel      | Set the current model                                 | `model: object, string` |
+
+Usage example:
+
+```javascript
+const client = api.getWindow("bioengine-web-client");
+console.log(await p.listModels());
+// load cellpose model and run it
+await p.setModel("Cellpose");
+await p.setParameters({ diameter: 30, model_type: "cyto" });
+await p.runModel();
+```
+
 ## Development
 
 ```bash

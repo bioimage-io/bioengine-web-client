@@ -1,3 +1,5 @@
+import { watch } from "vue";
+
 export const loadCellposeRdf = () => {
   const cellposeRdf = {
     id: "cellpose-python",

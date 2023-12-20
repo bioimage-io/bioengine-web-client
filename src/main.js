@@ -11,6 +11,7 @@ import App from "./App.vue";
 import { useStore } from "./stores/global";
 import { useParametersStore } from "./stores/parameters";
 import { setupStoreWatcher } from "./watcher";
+import { useRunStore } from "./stores/run";
 
 window.app = {};
 
@@ -97,17 +98,48 @@ async function initImJoy() {
   // start as an plugin
   if (window.self !== window.top) {
     const imjoyRPC = await loadImJoyRPC();
-    const api = await imjoyRPC.setupRPC({ name: "Bioengine web client" });
+    const api = await imjoyRPC.setupRPC({ name: "bioengine-web-client" });
     window.app.imjoy = api;
     function setup() {
       api.log("Bioengine web client initialized.");
     }
-    function runModel() {
-      const store = window.app.store;
+    async function runModel() {
+      const runStore = window.app.store.run;
+      await runStore.run();
+    }
+    function setParameters(params) {
+      const paramsStore = window.app.store.parameters;
+      paramsStore.$patch({
+        additionalParameters: params,
+      });
+    }
+    function listModels() {
+      const globalStore = window.app.store.global;
+      return globalStore.models;
+    }
+    function setModel(model) {
+      const globalStore = window.app.store.global;
+      if (typeof model === "string") {
+        for (const m of globalStore.models) {
+          if (m.nickname === model || m.name === model || m.id === model) {
+            globalStore.$patch({
+              currentModel: m,
+            });
+            return;
+          }
+        }
+      } else {
+        globalStore.$patch({
+          currentModel: model,
+        });
+      }
     }
     api.export({
       setup: setup,
       runModel: runModel,
+      setParameters: setParameters,
+      listModels: listModels,
+      setModel: setModel,
     });
   } else {
     // start as an standalone app
@@ -134,6 +166,7 @@ window.app.vue = app;
 window.app.store = {
   global: useStore(),
   parameters: useParametersStore(),
+  run: useRunStore(),
 };
 
 setupStoreWatcher();

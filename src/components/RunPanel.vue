@@ -109,6 +109,7 @@ import ModelParameters from "./ModelParameters.vue";
 import { ModelRunner } from "../modelRun";
 import { ImagejJsController } from "../viewerControl";
 import { useStore } from "../stores/global";
+import { useRunStore } from "../stores/run";
 import { useParametersStore } from "../stores/parameters";
 
 
@@ -119,6 +120,8 @@ function rdfHas(rdf, key) {
 export default {
     setup: () => {
         const store = useStore();
+        const paramsStore = useParametersStore();
+        const runStore = useRunStore();
 
         const newIjWindow = ref(true)
         const waiting = ref(false);
@@ -177,6 +180,53 @@ export default {
             setInfoPanel("");
         }
 
+        const runModel = async () => {
+            const store = useStore();
+            const parametersStore = useParametersStore();
+            const runner = store.runner;
+            setInfoPanel("Running the model...", true);
+            buttonEnabledRun.value = false;
+            console.log("Spec input axes: " + store.inputSpec.axes);
+            console.log("Spec output axes: " + store.outputSpec.axes);
+            try {
+                const img = await store.viewerControl.getImage();
+                let imgAxes = inferImgAxesViaSpec(img._rshape, store.inputSpec.axes, true);
+                console.log("Input image axes: " + imgAxes);
+                console.log("Reshape image to match the input spec.");
+                const tensor = imjoyToTfjs(img);
+                const reshapedTensor = mapAxes(tensor, imgAxes, store.inputSpec.axes);
+                const outTensor = await runner.runTiles(
+                    reshapedTensor,
+                    store.inputSpec,
+                    store.outputSpec,
+                    parametersStore.tileSizes,
+                    parametersStore.tileOverlaps,
+                    parametersStore.additionalParameters,
+                    (msg) => {
+                        setInfoPanel(msg, true);
+                    },
+                );
+                if (runner.isImg2Img()) {
+                    const imgsForShow = processForShow(outTensor, store.outputSpec.axes);
+                    await store.viewerControl.showImgs(imgsForShow, "output");
+                }
+                else {
+                    // classification model
+                    await store.viewerControl.showTableFromTensor(outTensor, "output");
+                }
+            }
+            catch (e) {
+                alert("Failed to run the model, see console for details.");
+                setInfoPanel("Failed to run the model, see console for details.", false, true);
+                buttonEnabledRun.value = true;
+                console.error(e);
+                debugger;
+                return;
+            }
+            setInfoPanel("");
+            buttonEnabledRun.value = true;
+        }
+
         watch(
             () => store.currentModel,
             (model) => {
@@ -185,6 +235,7 @@ export default {
                 }
             }
         )
+
         watch(
             () => store.serverUrl,
             async (url) => {
@@ -212,6 +263,22 @@ export default {
             }
         )
 
+        watch(
+            () => waiting.value,
+            () => {
+                runStore.$patch({
+                    runable: !waiting.value,
+                });
+            }
+        )
+
+        watch(
+            () => runStore.queryCount,
+            async (count) => {
+                await runModel();
+            }
+        )
+
         return {
             waiting,
             error,
@@ -223,6 +290,7 @@ export default {
             setInfoPanel,
             turnButtons,
             initModel,
+            runModel,
             newIjWindow,
         }
     },
@@ -258,7 +326,9 @@ export default {
             this.turnButtons(false)
             this.setInfoPanel("Initializing ImageJ.JS ...", true);
             await this.initImageJ();
-            this.viewerControl = new ImagejJsController(this.ij);
+            store.$patch({
+                viewerControl: new ImagejJsController(this.ij),
+            });
             this.setInfoPanel("");
             this.turnButtons(true);
         },
@@ -298,59 +368,13 @@ export default {
                 });
             }
         },
-        async runModel() {
-            const store = useStore();
-            const parametersStore = useParametersStore();
-            const runner = store.runner;
-            this.setInfoPanel("Running the model...", true);
-            this.buttonEnabledRun = false;
-            console.log("Spec input axes: " + store.inputSpec.axes);
-            console.log("Spec output axes: " + store.outputSpec.axes);
-            try {
-                const img = await this.viewerControl.getImage();
-                let imgAxes = inferImgAxesViaSpec(img._rshape, store.inputSpec.axes, true);
-                console.log("Input image axes: " + imgAxes);
-                console.log("Reshape image to match the input spec.");
-                const tensor = imjoyToTfjs(img);
-                const reshapedTensor = mapAxes(tensor, imgAxes, store.inputSpec.axes);
-                const outTensor = await runner.runTiles(
-                    reshapedTensor,
-                    store.inputSpec,
-                    store.outputSpec,
-                    parametersStore.tileSizes,
-                    parametersStore.tileOverlaps,
-                    parametersStore.additionalParameters,
-                    (msg) => {
-                        this.setInfoPanel(msg, true);
-                    },
-                );
-                if (runner.isImg2Img()) {
-                    const imgsForShow = processForShow(outTensor, store.outputSpec.axes);
-                    await this.viewerControl.showImgs(imgsForShow, "output");
-                }
-                else {
-                    // classification model
-                    await this.viewerControl.showTableFromTensor(outTensor, "output");
-                }
-            }
-            catch (e) {
-                alert("Failed to run the model, see console for details.");
-                this.setInfoPanel("Failed to run the model, see console for details.", false, true);
-                this.buttonEnabledRun = true;
-                console.error(e);
-                debugger;
-                return;
-            }
-            this.setInfoPanel("");
-            this.buttonEnabledRun = true;
-        },
         async loadTestInput() {
             const store = useStore();
             const runner = store.runner;
             this.setInfoPanel("Loading test input...", true);
             if (rdfHas(runner.rdf, "test_inputs")) {
                 try {
-                    await this.viewerControl.viewFromUrl(
+                    await store.viewerControl.viewFromUrl(
                         runner.rdf.test_inputs[0],
                         store.inputSpec, store.outputSpec
                     );
@@ -359,14 +383,14 @@ export default {
                     console.log("Failed to load the test input, see console for details.");
                     console.error(err);
                     console.log("Loading sample input instead...");
-                    await this.viewerControl.viewFromUrl(
+                    await store.viewerControl.viewFromUrl(
                         runner.rdf.sample_inputs[0],
                         store.inputSpec, store.outputSpec
                     );
                 }
             }
             else if (rdfHas(runner.rdf, "sample_inputs")) {
-                await this.viewerControl.viewFromUrl(
+                await store.viewerControl.viewFromUrl(
                     runner.rdf.sample_inputs[0],
                     store.inputSpec, store.outputSpec
                 );
@@ -382,7 +406,7 @@ export default {
             this.setInfoPanel("Loading test output...", true);
             if (rdfHas(runner.rdf, "test_outputs")) {
                 try {
-                    await this.viewerControl.viewFromUrl(
+                    await store.viewerControl.viewFromUrl(
                         runner.rdf.test_outputs[0],
                         store.inputSpec, store.outputSpec,
                         "output",
@@ -392,14 +416,14 @@ export default {
                     console.log("Failed to load the test output.");
                     console.error(err);
                     console.log("Loading sample output instead...");
-                    await this.viewerControl.viewFromUrl(
+                    await store.viewerControl.viewFromUrl(
                         runner.rdf.sample_outputs[0],
                         store.inputSpec, store.outputSpec,
                         "output");
                 }
             }
             else if (rdfHas(runner.rdf, "sample_outputs")) {
-                await this.viewerControl.viewFromUrl(
+                await store.viewerControl.viewFromUrl(
                     runner.rdf.sample_outputs[0],
                     store.inputSpec, store.outputSpec,
                     "output");
