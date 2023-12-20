@@ -21,12 +21,15 @@ This web client supports two-way integration with ImJoy, meaning you can either 
 
 The following ImJoy API is supported:
 
-| API           | Description                                           | Parameters              |
-| ------------- | ----------------------------------------------------- | ----------------------- |
-| runModel      | Run model on current image(in the viewer)             |                         |
-| setParameters | Set model parameters                                  | `parameters: object`    |
-| listModels    | List all models, return an array of model rdf objects |                         |
-| setModel      | Set the current model                                 | `model: object, string` |
+| API           | Description                                                                | Parameters                                |
+| ------------- | -------------------------------------------------------------------------- | ----------------------------------------- |
+| runModel      | Run model on current image(in the viewer)                                  |                                           |
+| setParameters | Set model parameters                                                       | `parameters: object`                      |
+| listModels    | List all models, return an array of model rdf objects                      |                                           |
+| setModel      | Set the current model, support input a model_id or model name or nick name | `model: object, string`                   |
+| setTiling     | Set the tile and overlap size for large images                             | `tileSizes: object; tileOverlaps: object` |
+| waitForReady  | Wait for the model to be ready                                             |                                           |
+| setServerUrl  | Set the server url                                                         | `url: string`                             |
 
 Usage example:
 
@@ -36,6 +39,7 @@ console.log(await client.listModels());
 // load cellpose model and run it
 await client.setModel("Cellpose");
 await client.setParameters({ diameter: 30, model_type: "cyto" });
+await client.setTiling({ x: 64, y: 64 });
 await client.runModel();
 ```
 

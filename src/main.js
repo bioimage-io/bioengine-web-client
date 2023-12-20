@@ -11,7 +11,7 @@ import App from "./App.vue";
 import { useStore } from "./stores/global";
 import { useParametersStore } from "./stores/parameters";
 import { setupStoreWatcher } from "./watcher";
-import { useRunStore, waitState } from "./stores/run";
+import { useRunStore, waitState, waitRunable } from "./stores/run";
 
 window.app = {};
 
@@ -120,13 +120,12 @@ async function initImJoy() {
     async function setModel(model) {
       const globalStore = window.app.store.global;
       const runStore = window.app.store.run;
-      runStore.$patch({
-        modelInitialized: false,
-      });
+      runStore.$patch({ modelInitialized: false });
       if (typeof model === "string") {
         for (const m of globalStore.models) {
           if (m.nickname === model || m.name === model || m.id === model) {
             if (globalStore.currentModel === m) {
+              runStore.$patch({ modelInitialized: true });
               return;
             }
             globalStore.$patch({
@@ -142,12 +141,49 @@ async function initImJoy() {
       }
       await waitState(() => runStore.modelInitialized, true);
     }
+    function setTiling(tileSizes = undefined, tileOverlaps = undefined) {
+      const paramsStore = window.app.store.parameters;
+      const tileSizesObj = {};
+      Object.assign(tileSizesObj, paramsStore.tileSizes);
+      if (tileSizes) {
+        Object.assign(tileSizesObj, tileSizes);
+      }
+      const tileOverlapsObj = {};
+      Object.assign(tileOverlapsObj, paramsStore.tileOverlaps);
+      if (tileOverlaps) {
+        Object.assign(tileOverlapsObj, tileOverlaps);
+      }
+      paramsStore.$patch({
+        tileSizes: tileSizesObj,
+        tileOverlaps: tileOverlapsObj,
+      });
+    }
+    async function waitForReady() {
+      await waitRunable();
+    }
+    async function setServerUrl(url) {
+      const globalStore = window.app.store.global;
+      const runStore = window.app.store.run;
+      runStore.$patch({ serverInitialized: false });
+      if (globalStore.serverUrl === url) {
+        runStore.$patch({ serverInitialized: true });
+        return;
+      }
+      globalStore.$patch({
+        serverUrl: url,
+      });
+      await waitState(() => runStore.serverInitialized, true);
+    }
+
     api.export({
       setup: setup,
       runModel: runModel,
       setParameters: setParameters,
       listModels: listModels,
       setModel: setModel,
+      setTiling: setTiling,
+      waitForReady: waitForReady,
+      setServerUrl: setServerUrl,
     });
   } else {
     // start as an standalone app

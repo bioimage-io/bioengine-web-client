@@ -17,12 +17,25 @@ export function setupStoreWatcher() {
     );
 
     watch(
-      [() => parametersStore.tileSizes, () => parametersStore.tileOverlaps],
+      () => parametersStore.tileSizes,
       (oldObj, newObj) => {
         if (newObj.y !== newObj.x) {
           newObj.y = newObj.x; // keep x and y the same
         }
-        console.log(oldObj, newObj);
+        console.log(newObj);
+        parametersStore.$patch({ tileSizes: newObj });
+      },
+      { deep: true }
+    );
+
+    watch(
+      () => parametersStore.tileOverlaps,
+      (oldObj, newObj) => {
+        if (newObj.y !== newObj.x) {
+          newObj.y = newObj.x; // keep x and y the same
+        }
+        console.log(newObj);
+        parametersStore.$patch({ tileOverlaps: newObj });
       },
       { deep: true }
     );

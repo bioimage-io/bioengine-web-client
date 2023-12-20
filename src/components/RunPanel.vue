@@ -255,6 +255,7 @@ export default {
             () => store.serverUrl,
             async (url) => {
                 const store = useStore();
+                const runStore = useRunStore();
                 store.$patch({
                     serverUrl: url,
                 });
@@ -274,6 +275,10 @@ export default {
                     setInfoPanel("Failed to initialize the server.", false, true);
                     turnButtons(false);
                     console.error(e);
+                } finally {
+                    runStore.$patch({
+                        serverInitialized: true,
+                    });
                 }
             }
         )

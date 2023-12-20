@@ -11,7 +11,7 @@ export async function waitState(stateFn, value) {
   console.log("State changed to the specific value");
 }
 
-async function waitRunable() {
+export async function waitRunable() {
   const store = useRunStore();
   await waitState(() => store.runable, true);
 }
@@ -20,7 +20,8 @@ export const useRunStore = defineStore("run", {
   state: () => ({
     queryCount: 0,
     runable: false,
-    modelInitialized: true,
+    modelInitialized: false,
+    serverInitialized: false,
   }),
   actions: {
     async run() {
