@@ -5,7 +5,7 @@
       <label class="field-label">Server URL</label>
       <div class="field-row">
         <InputText id="server-select" v-model="serverURL" />
-        <Button @click="this.updateServerUrl">Update</Button>
+        <Button @click="updateServerUrl">Update</Button>
       </div>
     </div>
     <div class="tiling-setting" v-if="store.tritonConfig">
@@ -85,7 +85,7 @@
 </style>
 
 <script>
-import { watch } from 'vue'
+import { watch, ref } from 'vue'
 import { useStore } from '../stores/global'
 import { useParametersStore } from '../stores/parameters'
 
@@ -93,30 +93,21 @@ export default {
   setup() {
     const store = useStore()
     const parametersStore = useParametersStore()
+    const serverURL = ref("")
+    serverURL.value = store.serverUrl
+
+    const updateServerUrl = () => {
+      store.$patch({ serverUrl: serverURL.value })
+    }
     
     watch(() => store.serverUrl, () => {
-      this.serverURL = store.serverUrl
+      serverURL.value = store.serverUrl
     })
     return {
       store: store,
       parametersStore: parametersStore,
-    }
-  },
-  data: function() {
-    const store = useStore()
-    const defaultUrl = store.serverUrl
-    const serverUrlList = [defaultUrl]
-    if (defaultUrl === "https://hypha.bioimage.io") {
-      serverUrlList.push("https://ai.imjoy.io")
-    } else if (defaultUrl === "https://ai.imjoy.io") {
-      serverUrlList.push("https://hypha.bioimage.io")
-    } else {
-      serverUrlList.push("https://hypha.bioimage.io")
-      serverUrlList.push("https://ai.imjoy.io")
-    }
-    return {
-      serverURL: serverUrlList[0],
-      serverUrlList: serverUrlList,
+      updateServerUrl: updateServerUrl,
+      serverURL: serverURL
     }
   },
 }

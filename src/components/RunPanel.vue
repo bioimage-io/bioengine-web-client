@@ -195,9 +195,9 @@ export default {
                 setInfoPanel("Initializing server...", true);
                 turnButtons(false);
                 try {
-                    const runner = new ModelRunner(this.serverUrl);
+                    const runner = new ModelRunner(store.serverUrl);
                     await runner.init();
-                    await this.initModel(oldModelId, runner);
+                    await initModel(oldModelId, runner);
                     store.$patch({
                         runner: runner,
                     });
