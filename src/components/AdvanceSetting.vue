@@ -8,50 +8,50 @@
         <Button @click="this.updateServerUrl">Update</Button>
       </div>
     </div>
-    <div class="tiling-setting" v-if="tritonConfig">
+    <div class="tiling-setting" v-if="store.tritonConfig">
       <h3>Settings for image tiling</h3>
       <div class="field-row">
         <div class="field-column">
           <div
-            v-if="'x' in inputMinShape && 'y' in inputMinShape"
+            v-if="'x' in store.inputMinShape && 'y' in store.inputMinShape"
           >
             <label class="field-label">Tile size(XY)</label>
             <InputNumber
-              v-model="tileSizes.x"
+              v-model="parametersStore.tileSizes.x"
               showButtons
-              :min="inputMinShape.x"
-              :max="inputMaxShape.x"
+              :min="store.inputMinShape.x"
+              :max="store.inputMaxShape.x"
             ></InputNumber>
           </div>
-          <div v-if="'z' in inputMinShape">
+          <div v-if="'z' in store.inputMinShape">
             <label class="field-label">Tile size(Z)</label>
             <InputNumber
-              v-model="tileSizes.z"
+              v-model="parametersStore.tileSizes.z"
               showButtons
-              :min="inputMinShape.z"
-              :max="inputMaxShape.z"
+              :min="store.inputMinShape.z"
+              :max="store.inputMaxShape.z"
             ></InputNumber>
           </div>
         </div>
         <div class="field-column">
           <div
-            v-if="'x' in inputMinShape && 'y' in inputMinShape"
+            v-if="'x' in store.inputMinShape && 'y' in store.inputMinShape"
           >
             <label class="field-label">Tile overlap(XY)</label>
             <InputNumber
-              v-model="tileOverlaps.x"
+              v-model="parametersStore.tileOverlaps.x"
               showButtons
               :min="0"
-              :max="inputMaxShape.x"
+              :max="store.inputMaxShape.x"
             ></InputNumber>
           </div>
-          <div v-if="'z' in inputMinShape">
+          <div v-if="'z' in store.inputMinShape">
             <label class="field-label">Tile overlap(Z)</label>
             <InputNumber
-              v-model="tileOverlaps.z"
+              v-model="parametersStore.tileOverlaps.z"
               showButtons
               :min="0"
-              :max="inputMaxShape.z"
+              :max="store.inputMaxShape.z"
               ></InputNumber>
           </div>
         </div>
@@ -85,17 +85,26 @@
 </style>
 
 <script>
+import { watch } from 'vue'
+import { useStore } from '../stores/global'
+import { useParametersStore } from '../stores/parameters'
+
 export default {
-  props: {
-    tritonConfig: Object,
-    inputMinShape: Object,
-    inputMaxShape: Object,
-    tileSizes: Object,
-    tileOverlaps: Object,
-    serverUrl: String,
+  setup() {
+    const store = useStore()
+    const parametersStore = useParametersStore()
+    
+    watch(() => store.serverUrl, () => {
+      this.serverURL = store.serverUrl
+    })
+    return {
+      store: store,
+      parametersStore: parametersStore,
+    }
   },
   data: function() {
-    const defaultUrl = this.serverUrl
+    const store = useStore()
+    const defaultUrl = store.serverUrl
     const serverUrlList = [defaultUrl]
     if (defaultUrl === "https://hypha.bioimage.io") {
       serverUrlList.push("https://ai.imjoy.io")
@@ -110,16 +119,5 @@ export default {
       serverUrlList: serverUrlList,
     }
   },
-  watch: {
-    serverUrl() {
-      console.log(this.serverUrl)
-      this.serverURL = this.serverUrl
-    },
-  },
-  methods: {
-    updateServerUrl() {
-      this.$emit('server-url-changed', this.serverURL)
-    },
-  }
 }
 </script>

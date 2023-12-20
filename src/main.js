@@ -1,12 +1,16 @@
 import { createApp } from "vue";
-import App from "./App.vue";
-import * as imjoyCore from "imjoy-core";
+import { createPinia } from "pinia";
 import PrimeVue from "primevue/config";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import "primevue/resources/themes/saga-blue/theme.css";
+
+import App from "./App.vue";
+import { useStore } from "./stores/global";
+import { useParametersStore } from "./stores/parameters";
+import { setupStoreWatcher } from "./watcher";
 
 window.app = {};
 
@@ -111,4 +115,15 @@ app.component("InputNumber", InputNumber);
 app.component("Dropdown", Dropdown);
 app.component("InputText", InputText);
 
+const pinia = createPinia();
+app.use(pinia);
 app.mount("#app");
+
+window.app.vue = app;
+
+window.app.store = {
+  global: useStore(),
+  parameters: useParametersStore(),
+};
+
+setupStoreWatcher();

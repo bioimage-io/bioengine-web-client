@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Dropdown :disabled="!open" v-model="currentModel" :options="modelList" option-label="name">
+    <Dropdown :disabled="!open" v-model="store.currentModel" :options="store.models" option-label="name">
       <template #value="slotProps">
         <div v-if="slotProps.value">
           <div>
@@ -23,34 +23,23 @@
 </template>
 
 <script>
+import { useStore } from '../stores/global'
+
 export default {
+  setup() {
+    const store = useStore()
+    return {
+      store: store
+    }
+  },
   props: {
     open: {
       type: Boolean,
       default: false
     },
-    additionalModels: {
-      type: Array,
-      default: () => []
-    }
-  },
-  data() {
-    return {
-      currentModel: null,
-      modelList: [],
-    }
   },
   mounted() {
     this.fetchModels()
-  },
-  watch: {
-    currentModel() {
-      this.$emit('model-selected', this.currentModel)
-    },
-
-    additionalModels() {
-      this.fetchModels()
-    }
   },
   methods: {
     async fetchAvailableModels() {
@@ -69,12 +58,16 @@ export default {
     async fetchModels() {
       const availableModels = await this.fetchAvailableModels()
       const collections = await this.fetchCollections()
-      const modelList = collections.filter(item => availableModels.includes(item.id))
-      this.modelList = modelList
-      this.currentModel = modelList[0]
-      if (this.additionalModels.length > 0) {
-        this.modelList = this.modelList.concat(this.additionalModels)
+      let modelList = collections.filter(item => availableModels.includes(item.id))
+      const store = useStore()
+      const additionalModels = store.additionalModels
+      if (additionalModels.length > 0) {
+        modelList = modelList.concat(additionalModels)
       }
+      store.$patch({
+        models: modelList,
+        currentModel: modelList[0]
+      })
     }
   }
 }

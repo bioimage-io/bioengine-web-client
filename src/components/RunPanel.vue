@@ -3,7 +3,7 @@
     <div class="model-selection">
         <div class="model-selection-line">
             <div class="model-selection-label">Model</div>
-            <ModelSelect :open="this.modelSelectEnable" @model-selected="handleModelChange" :additional-models="additionalModels" />
+            <ModelSelect :open="this.modelSelectEnable" />
         </div>
         <div class="model-selection-tips">ℹ️  Please visit <a href="https://bioimage.io/#/" target="_blank">bioimage.io</a> to view detailed information about the model.</div>
     </div>
@@ -35,15 +35,7 @@
     />
     <HideContainer :summary="'Advanced settings'">
       <OverlayContainer :open="waiting">
-        <AdvanceSetting
-          :tritonConfig="this.tritonConfig"
-          :inputMinShape="this.inputMinShape"
-          :inputMaxShape="this.inputMaxShape"
-          :tileSizes="this.tileSizes"
-          :tileOverlaps="this.tileOverlaps"
-          :serverUrl="this.serverUrl"
-          @server-url-changed="this.handleServerUrlChange"
-        ></AdvanceSetting>
+        <AdvanceSetting/>
       </OverlayContainer>
     </HideContainer>
     <div id="info">
@@ -103,6 +95,7 @@
 </style>
 
 <script>
+import { watch, ref } from "vue";
 import {
     processForShow,
     mapAxes,
@@ -117,12 +110,121 @@ import ModelSelect from "./ModelSelect.vue";
 import ModelParameters from "./ModelParameters.vue";
 import { ModelRunner } from "../modelRun";
 import { ImagejJsController } from "../viewerControl";
+import { useStore } from "../stores/global";
+import { useParametersStore } from "../stores/parameters";
+
 
 function rdfHas(rdf, key) {
   return rdf[key] !== undefined && rdf[key].length > 0;
 }
 
 export default {
+    setup: () => {
+        const store = useStore();
+
+        const waiting = ref(false);
+        const error = ref(false);
+        const info = ref("");
+        const buttonEnabledRun = ref(false);
+        const buttonEnabledInput = ref(false);
+        const buttonEnabledOutput = ref(false);
+        const modelSelectEnable = ref(false);
+
+        const setInfoPanel = (i, w = false, e = false) => {
+            info.value = i;
+            waiting.value = w;
+            error.value = e;
+        }
+
+        const turnButtons = (on) => {
+            if (!store?.runner?.rdf) {
+                buttonEnabledRun.value = false;
+                buttonEnabledInput.value = false;
+                buttonEnabledOutput.value = false;
+                modelSelectEnable.value = false;
+            } else {
+                buttonEnabledRun.value = on;
+                buttonEnabledInput.value = on && (
+                    rdfHas(store.runner.rdf, "test_inputs") ||
+                    rdfHas(store.runner.rdf, "sample_inputs"));
+                buttonEnabledOutput.value = on && (
+                    rdfHas(store.runner.rdf, "test_outputs") ||
+                    rdfHas(store.runner.rdf, "sample_outputs"));
+                modelSelectEnable.value = on;
+            }
+        }
+
+        const initModel = async (modelId, runner=undefined) => {
+            const store = useStore();
+            const parametersStore = useParametersStore();
+            if (runner === undefined) {
+                runner = store.runner;
+            }
+            setInfoPanel(`Initializing model ${modelId}...`, true);
+            turnButtons(false);
+            try {
+                await runner.loadModel(modelId);
+            } catch (e) {
+                this.setInfoPanel(`Failed to load model ${modelId}.`, false, true);
+                console.error(e);
+                throw e;
+            }
+            parametersStore.$patch({
+                tileSizes: store.runner.getDefaultTileSizes(),
+                tileOverlaps: store.runner.getDefaultTileOverlaps(),
+            })
+            turnButtons(true);
+            setInfoPanel("");
+        }
+
+        watch(
+            () => store.currentModel,
+            (model) => {
+                if (store?.runner?.rdf) {
+                    initModel(model.id);
+                }
+            }
+        )
+        watch(
+            () => store.serverUrl,
+            async (url) => {
+                const store = useStore();
+                store.$patch({
+                    serverUrl: url,
+                });
+                const oldModelId = this.runner.modelId;
+                setInfoPanel("Initializing server...", true);
+                turnButtons(false);
+                try {
+                    const runner = new ModelRunner(this.serverUrl);
+                    await runner.init();
+                    await this.initModel(oldModelId, runner);
+                    store.$patch({
+                        runner: runner,
+                    });
+                    turnButtons(true);
+                    setInfoPanel("");
+                } catch (e) {
+                    setInfoPanel("Failed to initialize the server.", false, true);
+                    turnButtons(false);
+                    console.error(e);
+                }
+            }
+        )
+
+        return {
+            waiting,
+            error,
+            info,
+            buttonEnabledRun,
+            buttonEnabledInput,
+            buttonEnabledOutput,
+            modelSelectEnable,
+            setInfoPanel,
+            turnButtons,
+            initModel,
+        }
+    },
     props: {
         ij: {
             type: Object,
@@ -130,21 +232,8 @@ export default {
         },
     },
     data: () => ({
-        waiting: false,
-        error: false,
-        info: "",
         ij: null,
         api: null,  // ImJoy API
-        buttonEnabledRun: false,
-        buttonEnabledInput: false,
-        buttonEnabledOutput: false,
-        modelSelectEnable: false,
-        tileSizes: { x: 0, y: 0, z: 0 },
-        tileOverlaps: { x: 0, y: 0, z: 0 },
-        runner: null,
-        serverUrl: "https://ai.imjoy.io",
-        additionalModels: [],
-        additionalParameterValues: {}
     }),
     computed: {
         infoColor() {
@@ -155,87 +244,20 @@ export default {
                 return "black";
             }
         },
-        tritonConfig() {
-            if (!this.runner) {
-                return {};
-            }
-            return this.runner.modelTritonConfig;
-        },
-        inputMinShape() {
-            if (!this?.runner?.rdf) {
-                return {};
-            }
-            return this.runner.getInputMinShape();
-        },
-        inputMaxShape() {
-            if (!this?.runner?.rdf) {
-                return {};
-            }
-            return this.runner.getInputMaxShape();
-        },
-        inputSpec() {
-            if (!this?.runner?.rdf) {
-                return {};
-            }
-            return this.runner.rdf.inputs[0];
-        },
-        outputSpec() {
-            if (!this?.runner?.rdf) {
-                return {};
-            }
-            return this.runner.rdf.outputs[0];
-        },
-        additionalParameters() {
-            if (!this?.runner?.rdf) {
-                return [];
-            }
-            const params = this?.runner?.rdf?.additional_parameters || [];
-            console.log("Additional parameters: ", params);
-            return params
-        },
-    },
-    watch: {
-        tileSizes: {
-            handler(oldObj, newObj) {
-                if (newObj.y !== newObj.x) {
-                    this.tileSizes.y = newObj.x; // keep x and y the same
-                }
-                console.log(oldObj, newObj);
-            },
-            deep: true
-        },
-        tileOverlaps: {
-            handler(oldObj, newObj) {
-                if (newObj.y !== newObj.x) {
-                    this.tileOverlaps.y = newObj.x; // keep x and y the same
-                }
-                console.log(oldObj, newObj);
-            },
-            deep: true
-        },
-        additionalParameters() {
-            const initValues = {};
-            for (const paramGroup of this.additionalParameters) {
-                for (const param of paramGroup.parameters) {
-                    initValues[param.name] = param.default;
-                }
-            }
-            console.log("Init additional parameters", initValues)
-            this.additionalParameterValues = initValues;
-        },
     },
     mounted() {
         this.init();
     },
     methods: {
         async init() {
+            const store = useStore();
             this.setInfoPanel("Initializing...", true);
             await this.initImJoy();
             const runner = new ModelRunner(this.serverUrl);
             await runner.init();
-            this.runner = runner;
-            const additionalModels = [await this.runner.loadCellposeRdf()];
-            this.additionalModels = additionalModels;
+            store.$patch({
+                runner: runner,
+            });
             const defaultModelId = "10.5281/zenodo.5764892";
             await this.initModel(defaultModelId);
             this.turnButtons(false)
@@ -248,64 +270,6 @@ export default {
             this.viewerControl = new ImagejJsController(this.ij);
             this.setInfoPanel("");
             this.turnButtons(true);
-        },
-        async initModel(modelId, runner=undefined) {
-            if (runner === undefined) {
-                runner = this.runner;
-            }
-            this.setInfoPanel(`Initializing model ${modelId}...`, true);
-            this.turnButtons(false);
-            try {
-                await runner.loadModel(modelId);
-            } catch (e) {
-                this.setInfoPanel(`Failed to load model ${modelId}.`, false, true);
-                console.error(e);
-                throw e;
-            }
-            this.tileSizes = runner.getDefaultTileSizes();
-            this.tileOverlaps = runner.getDefaultTileOverlaps();
-            this.turnButtons(true);
-            this.setInfoPanel("");
-        },
-        turnButtons(on) {
-            if (!this?.runner?.rdf) {
-                this.buttonEnabledRun = false;
-                this.buttonEnabledInput = false;
-                this.buttonEnabledOutput = false;
-                this.modelSelectEnable = false;
-            } else {
-                this.buttonEnabledRun = on;
-                this.buttonEnabledInput = on && (
-                    rdfHas(this.runner.rdf, "test_inputs") ||
-                    rdfHas(this.runner.rdf, "sample_inputs"));
-                this.buttonEnabledOutput = on && (
-                    rdfHas(this.runner.rdf, "test_outputs") ||
-                    rdfHas(this.runner.rdf, "sample_outputs"));
-                this.modelSelectEnable = on;
-            }
-        },
-        handleModelChange(model) {
-            if (this?.runner?.rdf) {
-                this.initModel(model.id);
-            }
-        },
-        async handleServerUrlChange(url) {
-            this.serverUrl = url;
-            const oldModelId = this.runner.modelId;
-            this.setInfoPanel("Initializing server...", true);
-            this.turnButtons(false);
-            try {
-                const runner = new ModelRunner(this.serverUrl);
-                await runner.init();
-                await this.initModel(oldModelId, runner);
-                this.runner = runner;
-                this.turnButtons(true);
-                this.setInfoPanel("");
-            } catch (e) {
-                this.setInfoPanel("Failed to initialize the server.", false, true);
-                this.turnButtons(false);
-                console.error(e);
-            }
         },
         async initImJoy() {
             function waitForImjoy(timeout = 10000) {
@@ -337,36 +301,34 @@ export default {
                 window_id: "ij-container"
             });
         },
-        setInfoPanel(info, waiting = false, error = false) {
-            this.info = info;
-            this.waiting = waiting;
-            this.error = error;
-        },
         async runModel() {
+            const store = useStore();
+            const parametersStore = useParametersStore();
+            const runner = store.runner;
             this.setInfoPanel("Running the model...", true);
             this.buttonEnabledRun = false;
-            console.log("Spec input axes: " + this.inputSpec.axes);
-            console.log("Spec output axes: " + this.outputSpec.axes);
+            console.log("Spec input axes: " + store.inputSpec.axes);
+            console.log("Spec output axes: " + store.outputSpec.axes);
             try {
                 const img = await this.viewerControl.getImage();
-                let imgAxes = inferImgAxesViaSpec(img._rshape, this.inputSpec.axes, true);
+                let imgAxes = inferImgAxesViaSpec(img._rshape, store.inputSpec.axes, true);
                 console.log("Input image axes: " + imgAxes);
                 console.log("Reshape image to match the input spec.");
                 const tensor = imjoyToTfjs(img);
-                const reshapedTensor = mapAxes(tensor, imgAxes, this.inputSpec.axes);
-                const outTensor = await this.runner.runTiles(
+                const reshapedTensor = mapAxes(tensor, imgAxes, store.inputSpec.axes);
+                const outTensor = await runner.runTiles(
                     reshapedTensor,
-                    this.inputSpec,
-                    this.outputSpec,
-                    this.tileSizes,
-                    this.tileOverlaps,
-                    this.additionalParameterValues,
+                    store.inputSpec,
+                    store.outputSpec,
+                    parametersStore.tileSizes,
+                    parametersStore.tileOverlaps,
+                    parametersStore.additionalParameters,
                     (msg) => {
                         this.setInfoPanel(msg, true);
                     },
                 );
-                if (this.runner.isImg2Img()) {
-                    const imgsForShow = processForShow(outTensor, this.outputSpec.axes);
+                if (runner.isImg2Img()) {
+                    const imgsForShow = processForShow(outTensor, store.outputSpec.axes);
                     await this.viewerControl.showImgs(imgsForShow, "output");
                 }
                 else {
@@ -386,12 +348,14 @@ export default {
             this.buttonEnabledRun = true;
         },
         async loadTestInput() {
+            const store = useStore();
+            const runner = store.runner;
             this.setInfoPanel("Loading test input...", true);
-            if (rdfHas(this.runner.rdf, "test_inputs")) {
+            if (rdfHas(runner.rdf, "test_inputs")) {
                 try {
                     await this.viewerControl.viewFromUrl(
-                        this.runner.rdf.test_inputs[0],
-                        this.inputSpec, this.outputSpec
+                        runner.rdf.test_inputs[0],
+                        store.inputSpec, store.outputSpec
                     );
                 }
                 catch (err) {
@@ -399,15 +363,15 @@ export default {
                     console.error(err);
                     console.log("Loading sample input instead...");
                     await this.viewerControl.viewFromUrl(
-                        this.runner.rdf.sample_inputs[0],
-                        this.inputSpec, this.outputSpec
+                        runner.rdf.sample_inputs[0],
+                        store.inputSpec, store.outputSpec
                     );
                 }
             }
-            else if (rdfHas(this.runner.rdf, "sample_inputs")) {
+            else if (rdfHas(runner.rdf, "sample_inputs")) {
                 await this.viewerControl.viewFromUrl(
                     this.runner.rdf.sample_inputs[0],
-                    this.inputSpec, this.outputSpec
+                    store.inputSpec, store.outputSpec
                 );
             }
             else {
@@ -416,12 +380,14 @@ export default {
             this.setInfoPanel("");
         },
         async loadTestOutput() {
+            const store = useStore();
+            const runner = store.runner;
             this.setInfoPanel("Loading test output...", true);
-            if (rdfHas(this.runner.rdf, "test_outputs")) {
+            if (rdfHas(runner.rdf, "test_outputs")) {
                 try {
                     await this.viewerControl.viewFromUrl(
-                        this.runner.rdf.test_outputs[0],
-                        this.inputSpec, this.outputSpec,
+                        runner.rdf.test_outputs[0],
+                        store.inputSpec, store.outputSpec,
                         "output",
                     );
                 }
@@ -430,15 +396,15 @@ export default {
                     console.error(err);
                     console.log("Loading sample output instead...");
                     await this.viewerControl.viewFromUrl(
-                        this.runner.rdf.sample_outputs[0],
-                        this.inputSpec, this.outputSpec,
+                        runner.rdf.sample_outputs[0],
+                        store.inputSpec, store.outputSpec,
                         "output");
                 }
             }
-            else if (rdfHas(this.runner.rdf, "sample_outputs")) {
+            else if (rdfHas(runner.rdf, "sample_outputs")) {
                 await this.viewerControl.viewFromUrl(
-                    this.runner.rdf.sample_outputs[0],
-                    this.inputSpec, this.outputSpec,
+                    runner.rdf.sample_outputs[0],
+                    store.inputSpec, store.outputSpec,
                     "output");
             }
             else {
