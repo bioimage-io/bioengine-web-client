@@ -86,6 +86,10 @@ class ImJoyPlugin {
               type: "string",
               description: "The model name to run",
             },
+            parameters: {
+              type: "string",
+              description: `Parameters for the model, structured as a JSON object. For example, use {"model_type": "cyto", "diameter": 30} for a cyto model with a diameter parameter. The keys should be string identifiers of the parameters, and the values should be their corresponding settings. The structure and content of this object can vary depending on the specific model being used. Make sure to adhere to the expected data types and value ranges for each parameter.`
+            }
           },
         };
       },
@@ -99,6 +103,11 @@ class ImJoyPlugin {
           await client.waitForReady();
         }
         await client.setModel(config["model_name"]);
+        const params = config?.parameters;
+        if (params) {
+          const paramsObj = JSON.parse(params)
+          await client.setParameters(paramsObj);
+        }
         await client.runModel();
       },
     });
