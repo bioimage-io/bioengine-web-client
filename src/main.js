@@ -48,7 +48,7 @@ async function setupImJoyApp() {
     label: "➕ Chatbot",
     async callback() {
       const chatbot = await api.createWindow({
-        src: "https://chat.bioimage.io/public/apps/bioimageio-chatbot-client/index",
+        src: "https://staging.chat.bioimage.io/public/apps/bioimageio-chatbot-client/index",
         name: "BioImage.IO Chatbot",
       });
       await chatbot.registerExtension({
