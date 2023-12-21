@@ -94,97 +94,101 @@ async function setupImJoyApp() {
   return app;
 }
 
+async function exportImjoyRPC(api) {
+  function setup() {
+    api.log("Bioengine web client initialized.");
+  }
+  async function runModel() {
+    const runStore = window.app.store.run;
+    await runStore.run();
+  }
+  function setParameters(params) {
+    const paramsStore = window.app.store.parameters;
+    paramsStore.$patch({
+      additionalParameters: params,
+    });
+  }
+  function listModels() {
+    const globalStore = window.app.store.global;
+    return globalStore.models;
+  }
+  async function setModel(model) {
+    const globalStore = window.app.store.global;
+    const runStore = window.app.store.run;
+    runStore.$patch({ modelInitialized: false });
+    if (typeof model === "string") {
+      for (const m of globalStore.models) {
+        if (m.nickname === model || m.name === model || m.id === model) {
+          if (globalStore.currentModel === m) {
+            runStore.$patch({ modelInitialized: true });
+            return;
+          }
+          globalStore.$patch({
+            currentModel: m,
+          });
+          break;
+        }
+      }
+    } else {
+      globalStore.$patch({
+        currentModel: model,
+      });
+    }
+    await waitState(() => runStore.modelInitialized, true);
+  }
+  function setTiling(tileSizes = undefined, tileOverlaps = undefined) {
+    const paramsStore = window.app.store.parameters;
+    const tileSizesObj = {};
+    Object.assign(tileSizesObj, paramsStore.tileSizes);
+    if (tileSizes) {
+      Object.assign(tileSizesObj, tileSizes);
+    }
+    const tileOverlapsObj = {};
+    Object.assign(tileOverlapsObj, paramsStore.tileOverlaps);
+    if (tileOverlaps) {
+      Object.assign(tileOverlapsObj, tileOverlaps);
+    }
+    paramsStore.$patch({
+      tileSizes: tileSizesObj,
+      tileOverlaps: tileOverlapsObj,
+    });
+  }
+  async function waitForReady() {
+    await waitRunable();
+  }
+  async function setServerUrl(url) {
+    const globalStore = window.app.store.global;
+    const runStore = window.app.store.run;
+    runStore.$patch({ serverInitialized: false });
+    if (globalStore.serverUrl === url) {
+      runStore.$patch({ serverInitialized: true });
+      return;
+    }
+    globalStore.$patch({
+      serverUrl: url,
+    });
+    await waitState(() => runStore.serverInitialized, true);
+  }
+
+  api.export({
+    setup: setup,
+    runModel: runModel,
+    setParameters: setParameters,
+    listModels: listModels,
+    setModel: setModel,
+    setTiling: setTiling,
+    waitForReady: waitForReady,
+    setServerUrl: setServerUrl,
+  });
+}
+
 async function initImJoy() {
   // start as an plugin
   if (window.self !== window.top) {
     const imjoyRPC = await loadImJoyRPC();
     const api = await imjoyRPC.setupRPC({ name: "bioengine-web-client" });
     window.app.imjoy = api;
-    function setup() {
-      api.log("Bioengine web client initialized.");
-    }
-    async function runModel() {
-      const runStore = window.app.store.run;
-      await runStore.run();
-    }
-    function setParameters(params) {
-      const paramsStore = window.app.store.parameters;
-      paramsStore.$patch({
-        additionalParameters: params,
-      });
-    }
-    function listModels() {
-      const globalStore = window.app.store.global;
-      return globalStore.models;
-    }
-    async function setModel(model) {
-      const globalStore = window.app.store.global;
-      const runStore = window.app.store.run;
-      runStore.$patch({ modelInitialized: false });
-      if (typeof model === "string") {
-        for (const m of globalStore.models) {
-          if (m.nickname === model || m.name === model || m.id === model) {
-            if (globalStore.currentModel === m) {
-              runStore.$patch({ modelInitialized: true });
-              return;
-            }
-            globalStore.$patch({
-              currentModel: m,
-            });
-            break;
-          }
-        }
-      } else {
-        globalStore.$patch({
-          currentModel: model,
-        });
-      }
-      await waitState(() => runStore.modelInitialized, true);
-    }
-    function setTiling(tileSizes = undefined, tileOverlaps = undefined) {
-      const paramsStore = window.app.store.parameters;
-      const tileSizesObj = {};
-      Object.assign(tileSizesObj, paramsStore.tileSizes);
-      if (tileSizes) {
-        Object.assign(tileSizesObj, tileSizes);
-      }
-      const tileOverlapsObj = {};
-      Object.assign(tileOverlapsObj, paramsStore.tileOverlaps);
-      if (tileOverlaps) {
-        Object.assign(tileOverlapsObj, tileOverlaps);
-      }
-      paramsStore.$patch({
-        tileSizes: tileSizesObj,
-        tileOverlaps: tileOverlapsObj,
-      });
-    }
-    async function waitForReady() {
-      await waitRunable();
-    }
-    async function setServerUrl(url) {
-      const globalStore = window.app.store.global;
-      const runStore = window.app.store.run;
-      runStore.$patch({ serverInitialized: false });
-      if (globalStore.serverUrl === url) {
-        runStore.$patch({ serverInitialized: true });
-        return;
-      }
-      globalStore.$patch({
-        serverUrl: url,
-      });
-      await waitState(() => runStore.serverInitialized, true);
-    }
-
-    api.export({
-      setup: setup,
-      runModel: runModel,
-      setParameters: setParameters,
-      listModels: listModels,
-      setModel: setModel,
-      setTiling: setTiling,
-      waitForReady: waitForReady,
-      setServerUrl: setServerUrl,
-    });
+    await exportImjoyRPC(api);
   } else {
     // start as an standalone app
     await setupImJoyApp();
