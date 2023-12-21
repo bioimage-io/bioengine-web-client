@@ -113,12 +113,18 @@ async function exportImjoyRPC(api) {
     return globalStore.models;
   }
   async function setModel(model) {
+    console.log(model);
     const globalStore = window.app.store.global;
     const runStore = window.app.store.run;
     runStore.$patch({ modelInitialized: false });
     if (typeof model === "string") {
+      const label = model.toLowerCase();
       for (const m of globalStore.models) {
-        if (m.nickname === model || m.name === model || m.id === model) {
+        if (
+          m.nickname.toLowerCase() === label ||
+          m.name.toLowerCase() === label ||
+          m.id.toLowerCase() === label
+        ) {
           if (globalStore.currentModel === m) {
             runStore.$patch({ modelInitialized: true });
             return;
