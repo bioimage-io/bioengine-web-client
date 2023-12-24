@@ -91,14 +91,49 @@ class ImJoyPlugin {
               description: `Parameters for the model, structured as a JSON object. For example, use {"model_type": "cyto", "diameter": 30} for a cyto model with a diameter parameter. The keys should be string identifiers of the parameters, and the values should be their corresponding settings. The structure and content of this object can vary depending on the specific model being used. Make sure to adhere to the expected data types and value ranges for each parameter. It's not include the tiling related parameters, please use tiling_sizes and tiling_overlaps instead.`
             },
             tiling_sizes: {
-              type: "string",
-              description: `The sizes of the tile for run the model in each dimension, structured as a JSON object. For example use {x: 64, y: 64} for 64x64 pixel tiles in 2D models. If your model is 3D, you can include 'z' like {x: 64, y: 64, z: 64}.`
+              type: "object",
+              description: `The sizes of the tile for run the model in each dimension, structured as a JSON object. For example use {x: 64, y: 64} for 64x64 pixel tiles in 2D models. If your model is 3D, you can include 'z' like {x: 64, y: 64, z: 64}.`,
+              properties: {
+                x: {
+                  title: "x",
+                  type: "number",
+                  description: "The size of the tile in the x dimension."
+                },
+                y: {
+                  title: "y",
+                  type: "number",
+                  description: "The size of the tile in the y dimension."
+                },
+                z: {
+                  title: "z",
+                  type: "number",
+                  description: "The size of the tile in the z dimension."
+                },
+              }
             },
             tiling_overlaps: {
               type: "string",
-              description: `The overlap of the tile for run the model in each dimension, structured as a JSON object. For example use {x: 32, y: 32} for 32x32 pixel overlaps in 2D models. If your model is 3D, you can include 'z' like {x: 32, y: 32, z: 32}.`
+              description: `The overlap of the tile for run the model in each dimension, structured as a JSON object. For example use {x: 32, y: 32} for 32x32 pixel overlaps in 2D models. If your model is 3D, you can include 'z' like {x: 32, y: 32, z: 32}.`,
+              properties: {
+                x: {
+                  title: "x",
+                  type: "number",
+                  description: "The overlap of the tile in the x dimension."
+                },
+                y: {
+                  title: "y",
+                  type: "number",
+                  description: "The overlap of the tile in the y dimension."
+                },
+                z: {
+                  title: "z",
+                  type: "number",
+                  description: "The overlap of the tile in the z dimension."
+                },
+              }
             },
           },
+          required: ["model_name"],
         };
       },
       async execute(config) {
