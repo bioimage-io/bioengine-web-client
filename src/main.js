@@ -32,6 +32,8 @@ async function setupImJoyApp() {
   });
   const api = app.imjoy.api;
   window.app.imjoy = api;
+  const clientApi = await createImjoyApi(api)
+  window.app.client = clientApi;
   // if you want to let users to load new plugins, add a menu item
   app.addMenuItem({
     label: "➕ Load Plugin",
@@ -94,7 +96,7 @@ async function setupImJoyApp() {
   return app;
 }
 
-async function exportImjoyRPC(api) {
+async function createImjoyApi(api) {
   function setup() {
     api.log("Bioengine web client initialized.");
   }
@@ -176,7 +178,7 @@ async function exportImjoyRPC(api) {
     await waitState(() => runStore.serverInitialized, true);
   }
 
-  api.export({
+  return {
     setup: setup,
     runModel: runModel,
     setParameters: setParameters,
@@ -185,7 +187,7 @@ async function exportImjoyRPC(api) {
     setTiling: setTiling,
     waitForReady: waitForReady,
     setServerUrl: setServerUrl,
-  });
+  };
 }
 
 async function initImJoy() {
@@ -194,7 +196,9 @@ async function initImJoy() {
     const imjoyRPC = await loadImJoyRPC();
     const api = await imjoyRPC.setupRPC({ name: "bioengine-web-client" });
     window.app.imjoy = api;
-    await exportImjoyRPC(api);
+    const clientApi = await createImjoyApi(api)
+    await api.export(clientApi);
+    window.api.client = clientApi;
   } else {
     // start as an standalone app
     await setupImJoyApp();
