@@ -42,6 +42,12 @@ export const loadCellposeRdf = () => {
             description: "Type of cells to segment.",
             enum: ["nuclei", "cyto"],
           },
+          {
+            name: "flow_threshold",
+            type: "number",
+            default: 0.4,
+            description: "Threshold for the flow.",
+          }
         ],
       },
     ],
