@@ -1,83 +1,77 @@
 <template>
-  <div id="test-run-body">
-    <div class="model-selection">
-        <div class="model-selection-line">
-            <div class="model-selection-label">Model</div>
-            <ModelSelect :open="this.modelSelectEnable" />
+    <div id="test-run-body">
+        <div class="model-selection">
+            <div class="model-selection-line">
+                <div class="model-selection-label">Model</div>
+                <ModelSelect :open="this.modelSelectEnable" />
+            </div>
+            <div class="model-selection-tips">ℹ️ Please visit <a href="https://bioimage.io/#/"
+                    target="_blank">bioimage.io</a> to view detailed information about the model.</div>
         </div>
-        <div class="model-selection-tips">ℹ️  Please visit <a href="https://bioimage.io/#/" target="_blank">bioimage.io</a> to view detailed information about the model.</div>
+        <div id="buttons">
+            <Button :disabled="!this.buttonEnabledInput" @click="this.loadTestInput">
+                Load sample image
+            </Button>
+            <Button class="is-primary" :disabled="!this.buttonEnabledRun" @click="this.runModel">
+                Run model
+            </Button>
+            <Button :disabled="!this.buttonEnabledOutput" @click="this.loadTestOutput">
+                Show reference output
+            </Button>
+        </div>
+        <ModelParameters :overlay="waiting" />
+        <HideContainer :summary="'Advanced settings'">
+            <OverlayContainer :open="waiting">
+                <AdvanceSetting />
+            </OverlayContainer>
+        </HideContainer>
+        <div id="info">
+            <LoadingAnimation v-if="this.waiting" />
+            <div v-else-if="$props.ij === null">
+                <span>💡Tip: Drag and drop your own image file below to try out the
+                    model. We support formats like .tiff, .png, and .jpg</span>
+            </div>
+            <div id="info-panel" :style="{ color: infoColor }">{{ this.info }}</div>
+        </div>
+        <div id="ij-container" v-if="newIjWindow"></div>
     </div>
-    <div id="buttons">
-      <Button
-        :disabled="!this.buttonEnabledInput"
-        @click="this.loadTestInput"
-      >
-        Load sample image
-      </Button>
-      <Button
-        class="is-primary"
-        :disabled="!this.buttonEnabledRun"
-        @click="this.runModel"
-      >
-        Run model
-      </Button>
-      <Button
-        :disabled="!this.buttonEnabledOutput"
-        @click="this.loadTestOutput"
-      >
-        Show reference output
-      </Button>
-    </div>
-    <ModelParameters
-      :overlay="waiting"
-    />
-    <HideContainer :summary="'Advanced settings'">
-      <OverlayContainer :open="waiting">
-        <AdvanceSetting/>
-      </OverlayContainer>
-    </HideContainer>
-    <div id="info">
-      <LoadingAnimation v-if="this.waiting"/>
-      <div v-else-if="$props.ij === null">
-        <span
-          >💡Tip: Drag and drop your own image file below to try out the
-          model. We support formats like .tiff, .png, and .jpg</span
-        >
-      </div>
-      <div id="info-panel" :style="{ color: infoColor }">{{ this.info }}</div>
-    </div>
-    <div id="ij-container" v-if="newIjWindow"></div>
-  </div>
 </template>
 
 <style scoped>
 #test-run-body {
     padding: 10px;
 }
+
 #ij-container {
     height: 600px;
     border: 1px solid #ccc;
 }
+
 #buttons {
     margin-top: 10px;
     margin-bottom: 10px;
     display: flex;
     gap: 10px;
 }
+
 #info-panel {
     display: inline-block;
     margin-left: 10px;
     margin-bottom: 20px;
 }
+
 #info {
     margin-top: 10px;
 }
+
 .model-selection {
     margin-bottom: 10px;
 }
+
 .model-selection-line {
     display: flex;
 }
+
 .model-selection-label {
     display: inline-block;
     margin-right: 10px;
@@ -86,10 +80,10 @@
     padding-top: 5px;
     padding-bottom: 5px;
 }
+
 .model-selection-tips {
     padding: 5px;
 }
-
 </style>
 
 <script>
@@ -114,7 +108,7 @@ import { useParametersStore } from "../stores/parameters";
 
 
 function rdfHas(rdf, key) {
-  return rdf[key] !== undefined && rdf[key].length > 0;
+    return rdf[key] !== undefined && rdf[key].length > 0;
 }
 
 export default {
@@ -156,7 +150,7 @@ export default {
             }
         }
 
-        const initModel = async (modelId, runner=undefined) => {
+        const initModel = async (modelId, runner = undefined) => {
             const store = useStore();
             const parametersStore = useParametersStore();
             const runStore = useRunStore();
@@ -180,13 +174,13 @@ export default {
             // init additional parameters
             const initValues = {};
             for (const paramGroup of parametersStore.additionalParametersSchema) {
-              for (const param of paramGroup.parameters) {
-                initValues[param.name] = param.default;
-              }
+                for (const param of paramGroup.parameters) {
+                    initValues[param.name] = param.default;
+                }
             }
             console.log("Init additional parameters", initValues);
             parametersStore.$patch({
-              additionalParameters: initValues,
+                additionalParameters: initValues,
             });
             turnButtons(true);
             setInfoPanel("");
@@ -379,6 +373,10 @@ export default {
                 this.newIjWindow = false;
                 this.ij = ij
             } else {
+                const pluginMode = window.self !== window.top
+                if (pluginMode) {
+                    this.newIjWindow = false;
+                }
                 console.log("Create IJ window...");
                 this.ij = await this.api.createWindow({
                     src: "https://ij.imjoy.io/",
