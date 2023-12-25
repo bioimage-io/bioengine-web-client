@@ -4,13 +4,13 @@
 
 <config lang="json">
 {
-  "name": "Chatbot launcher",
+  "name": "chatbot-bioengine-client",
   "type": "web-worker",
   "tags": [],
   "ui": "",
   "version": "0.1.0",
   "cover": "",
-  "description": "Launch chatbot with bioengine-web-client support",
+  "description": "Register bioengine web client to chatbot",
   "icon": "extension",
   "inputs": null,
   "outputs": null,
@@ -25,14 +25,14 @@
 <script lang="javascript">
 class ImJoyPlugin {
   async setup() {
-    api.log('initialized')
+    this.chatbot = await api.getWindow("BioImage.IO Chatbot")
+    if (this.chatbot) {
+      await this.registerExtensions()
+    }
   }
 
-  async run(ctx) {
-    const chatbot = await api.createWindow({
-      src: "https://staging.chat.bioimage.io/public/apps/bioimageio-chatbot-client/index",
-      name: "BioImage.IO Chatbot",
-    });
+  async registerExtensions() {
+    const chatbot = this.chatbot
     await chatbot.registerExtension({
       _rintf: true,
       name: "runImageJMacro",
@@ -158,6 +158,18 @@ class ImJoyPlugin {
         return models;
       },
     })
+
+    api.log('initialized')
+  }
+
+  async run(ctx) {
+    if (!this.chatbot) {
+      this.chatbot = await api.createWindow({
+        src: "https://staging.chat.bioimage.io/public/apps/bioimageio-chatbot-client/index",
+        name: "BioImage.IO Chatbot",
+      });
+    }
+    await this.registerExtensions()
   }
 }
 
