@@ -163,12 +163,14 @@ class ImJoyPlugin {
   }
 
   async run(ctx) {
-    if (!this.chatbot) {
-      this.chatbot = await api.createWindow({
+    let chatbot = await api.getWindow("BioImage.IO Chatbot");
+    if (!chatbot) {
+      chatbot = await api.createWindow({
         src: "https://staging.chat.bioimage.io/public/apps/bioimageio-chatbot-client/index",
         name: "BioImage.IO Chatbot",
       });
     }
+    this.chatbot = chatbot
     await this.registerExtensions()
   }
 }
