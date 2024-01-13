@@ -25,54 +25,19 @@
 <script lang="javascript">
 class ImJoyPlugin {
   async setup() {
-    this.chatbot = await api.getWindow("BioImage.IO Chatbot")
-    if (this.chatbot) {
-      await this.registerExtensions()
+    if (api.registerChatbotExtension) {
+      const chatbot = api
+      await this.registerExtensions(chatbot.registerChatbotExtension)
+    } else {
+      const chatbot = await api.getWindow("BioImage.IO Chatbot")
+      if (chatbot) {
+        await this.registerExtensions(chatbot.registerExtension)
+      }
     }
   }
 
-  async registerExtensions() {
-    const chatbot = this.chatbot
-    await chatbot.registerExtension({
-      _rintf: true,
-      name: "runImageJMacro",
-      description: "Run a macro in ImageJ.JS",
-      async get_schema() {
-        return {
-          type: "object",
-          title: "RunImageJMacro",
-          description: "Run a macro in ImageJ.JS",
-          properties: {
-            macro: {
-              type: "string",
-              description: "The macro to run",
-            },
-            args: {
-              type: "object",
-              description: "Arguments for the macro",
-            },
-          },
-        };
-      },
-      async execute(config) {
-        let ij = await api.getWindow("ImageJ.JS");
-        if (!ij) {
-          ij = await api.createWindow({
-            src: "https://ij.imjoy.io",
-            name: "ImageJ.JS",
-          });
-        }
-        try {
-          const result = await ij.runMacro(config["macro"], config["args"]);
-          return result;
-        } catch (e) {
-          console.error(e);
-          return e.toString();
-        }
-      },
-    });
-
-    await chatbot.registerExtension({
+  async registerExtensions(register) {
+    await register({
       _rintf: true,
       name: "runBioengineClient",
       description: "Run bioengine web client",
@@ -133,32 +98,6 @@ class ImJoyPlugin {
       },
     })
 
-    await chatbot.registerExtension({
-      _rintf: true,
-      name: "listBioengineModels",
-      description: "List all bioengine models",
-      async get_schema() {
-        return {
-          type: "object",
-          title: "ListBioengineModels",
-          description: "This function retrieves a list of all available bioengine models along with their descriptions. The output is formatted as a Markdown table, providing a clear and structured view of each model and its relevant details. The table will include columns for model identifiers, names, descriptions, and any other pertinent attributes.",
-          properties: {},
-        };
-      },
-      async execute(config) {
-        let client = await api.getWindow("bioengine-web-client");
-        if (!client) {
-          client = await api.createWindow({
-            src: "https://bioimage-io.github.io/bioengine-web-client/",
-            name: "bioengine-web-client",
-          });
-          await client.waitForReady();
-        }
-        const models = await client.listModels();
-        return models;
-      },
-    })
-
     api.log('initialized')
   }
 
@@ -170,8 +109,7 @@ class ImJoyPlugin {
         name: "BioImage.IO Chatbot",
       });
     }
-    this.chatbot = chatbot
-    await this.registerExtensions()
+    await this.registerExtensions(chatbot.registerExtension);
   }
 }
 
