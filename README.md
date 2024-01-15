@@ -14,6 +14,7 @@ Functionality:
 - Submitting images to Bioengine and displaying results.
 - Image tiler allows to run model on large images.
 - Export ImJoy API for using as a plugin in ImJoy.
+- Integrated with [Bioimage.IO chatbot](https://github.com/bioimage-io/bioimageio-chatbot/)
 
 ## ImJoy API
 
@@ -35,12 +36,23 @@ Usage example:
 
 ```javascript
 const client = await api.getWindow("bioengine-web-client");
+await client.waitForReady();
 console.log(await client.listModels());
 // load cellpose model and run it
 await client.setModel("Cellpose");
 await client.setParameters({ diameter: 30, model_type: "cyto" });
 await client.setTiling({ x: 64, y: 64 });
 await client.runModel();
+```
+
+## As an Bioimage.IO chatbot extension
+
+This web client can be used as an extension of the [Bioimage.IO chatbot](https://github.com/bioimage-io/bioimageio-chatbot/)
+to run models on Bioengine.
+You can load this url in the chatbot to use it as an extension:
+
+```
+https://bioimage-io.github.io/bioengine-web-client/chatbot-extension.imjoy.html
 ```
 
 ## Development

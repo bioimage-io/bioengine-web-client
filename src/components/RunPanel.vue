@@ -114,7 +114,6 @@ function rdfHas(rdf, key) {
 export default {
     setup: () => {
         const store = useStore();
-        const paramsStore = useParametersStore();
         const runStore = useRunStore();
 
         const newIjWindow = ref(true)
