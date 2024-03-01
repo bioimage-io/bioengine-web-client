@@ -29,9 +29,16 @@ class ImJoyPlugin {
       const chatbot = api
       await this.registerExtensions(chatbot.registerChatbotExtension)
     } else {
-      const chatbot = await api.getWindow("BioImage.IO Chatbot")
+      let chatbot = await api.getWindow("BioImage.IO Chatbot")
       if (chatbot) {
         await this.registerExtensions(chatbot.registerExtension)
+      } else {
+        chatbot = await api.createWindow({src: "https://chat.bioimage.io/public/apps/bioimageio-chatbot-client/chat", name: "BioImage.IO Chatbot"})
+        await this.registerExtensions(chatbot.registerExtension)
+      }
+      let ij = await api.getWindow("ImageJ.JS")
+      if (!ij) {
+        ij = await api.createWindow({src: "https://ij.imjoy.io/", name: "ImageJ.JS"})
       }
     }
   }
@@ -101,16 +108,7 @@ class ImJoyPlugin {
     api.log('initialized')
   }
 
-  async run(ctx) {
-    let chatbot = await api.getWindow("BioImage.IO Chatbot");
-    if (!chatbot) {
-      chatbot = await api.createWindow({
-        src: "https://staging.chat.bioimage.io/public/apps/bioimageio-chatbot-client/index",
-        name: "BioImage.IO Chatbot",
-      });
-    }
-    await this.registerExtensions(chatbot.registerExtension);
-  }
+  async run(ctx) {  }
 }
 
 api.export(new ImJoyPlugin())
