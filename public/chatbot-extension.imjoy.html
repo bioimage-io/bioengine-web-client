@@ -39,6 +39,7 @@ class ImJoyPlugin {
       let ij = await api.getWindow("ImageJ.JS")
       if (!ij) {
         ij = await api.createWindow({src: "https://ij.imjoy.io/", name: "ImageJ.JS"})
+        await ij.runMacro('run("Blobs (25K)")')
       }
     }
   }
