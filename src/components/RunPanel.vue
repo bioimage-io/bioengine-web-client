@@ -256,6 +256,8 @@ export default {
                 setInfoPanel("Initializing server...", true);
                 turnButtons(false);
                 try {
+                    console.log("Server URL: " + serverStore.serverUrl);
+                    console.log("Service ID: " + serverStore.serviceId);
                     const runner = new ModelRunner(serverStore.serverUrl, serverStore.serviceId);
                     await runner.init();
                     await initModel(oldModelId, runner);
@@ -327,23 +329,32 @@ export default {
     methods: {
         async init() {
             const store = useStore();
+            const serverStore = useServerStore();
             this.setInfoPanel("Initializing...", true);
             await this.initImJoy();
-            const runner = new ModelRunner(store.serverUrl, store.serviceId);
-            await runner.init();
-            store.$patch({
-                runner: runner,
-            });
-            const defaultModelId = "10.5281/zenodo.5764892";
-            await this.initModel(defaultModelId);
-            this.turnButtons(false)
-            this.setInfoPanel("Initializing ImageJ.JS ...", true);
-            await this.initImageJ();
-            store.$patch({
-                viewerControl: new ImagejJsController(this.ij),
-            });
-            this.setInfoPanel("");
-            this.turnButtons(true);
+            console.log("Server URL: " + serverStore.serverUrl);
+            console.log("Service ID: " + serverStore.serviceId);
+            try {
+                const runner = new ModelRunner(serverStore.serverUrl, serverStore.serviceId);
+                await runner.init();
+                store.$patch({
+                    runner: runner,
+                });
+                const defaultModelId = "10.5281/zenodo.5764892";
+                await this.initModel(defaultModelId);
+                this.turnButtons(false)
+                this.setInfoPanel("Initializing ImageJ.JS ...", true);
+                await this.initImageJ();
+                store.$patch({
+                    viewerControl: new ImagejJsController(this.ij),
+                });
+                this.setInfoPanel("");
+                this.turnButtons(true);
+            } catch (e) {
+                console.error(e);
+                this.setInfoPanel("Failed to initialize the server.", false, true);
+                return;
+            }
         },
         async initImJoy() {
             function waitForImjoy(timeout = 10000) {
