@@ -12,8 +12,9 @@ import {
 import { loadCellposeRdf } from "./utils";
 
 class TritonExecutor {
-  constructor(serverUrl) {
+  constructor(serverUrl, serviceId) {
     this.serverUrl = serverUrl;
+    this.serviceId = serviceId;
   }
 
   async init() {
@@ -22,7 +23,7 @@ class TritonExecutor {
       method_timeout: 30,
       name: "client",
     });
-    this.triton = await server.get_service("triton-client");
+    this.triton = await server.get_service(this.serviceId);
   }
 
   async loadModelConfig(nickname) {
@@ -73,8 +74,8 @@ class TritonExecutor {
 }
 
 export class ModelRunner {
-  constructor(serverUrl = "https://ai.imjoy.io") {
-    this.tritonExecutor = new TritonExecutor(serverUrl);
+  constructor(serverUrl = "https://ai.imjoy.io", serviceId = "triton-client") {
+    this.tritonExecutor = new TritonExecutor(serverUrl, serviceId);
     this.rdf = null;
     this.modelTritonConfig = null;
     this.inputEndianness = null;

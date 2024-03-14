@@ -245,18 +245,19 @@ export default {
         )
 
         watch(
-            () => store.serverUrl,
-            async (url) => {
+            () => (store.serverUrl, store.serviceId),
+            async () => {
                 const store = useStore();
                 const runStore = useRunStore();
                 store.$patch({
-                    serverUrl: url,
+                    serverUrl: store.serverUrl,
+                    serviceId: store.serviceId,
                 });
                 const oldModelId = store.runner.modelId;
                 setInfoPanel("Initializing server...", true);
                 turnButtons(false);
                 try {
-                    const runner = new ModelRunner(store.serverUrl);
+                    const runner = new ModelRunner(store.serverUrl, store.serviceId);
                     await runner.init();
                     await initModel(oldModelId, runner);
                     store.$patch({
@@ -329,7 +330,7 @@ export default {
             const store = useStore();
             this.setInfoPanel("Initializing...", true);
             await this.initImJoy();
-            const runner = new ModelRunner(this.serverUrl);
+            const runner = new ModelRunner(store.serverUrl, store.serviceId);
             await runner.init();
             store.$patch({
                 runner: runner,

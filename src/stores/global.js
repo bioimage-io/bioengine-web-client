@@ -4,6 +4,7 @@ import { loadCellposeRdf } from "../utils";
 export const useStore = defineStore("store", {
   state: () => ({
     serverUrl: "https://ai.imjoy.io",
+    serviceId: "triton-client",
     runner: null,
     viewerControl: null,
     models: [],

@@ -2,16 +2,22 @@
   <div class="advance-setting-container">
     <div class="server-setting">
       <h3>Settings for server</h3>
-      <label class="field-label">Server URL</label>
       <div class="field-row">
-        <InputText id="server-select" v-model="serverURL" />
-        <Button @click="updateServerUrl">Update</Button>
+        <div class="field-column" style="width: 200px">
+          <label class="field-label">Server URL</label>
+          <InputText id="server-select" v-model="serverURL" />
+        </div>
+        <div class="field-column" style="width: 140px">
+          <label class="field-label">Service ID</label>
+          <InputText id="service-select" style="width: 140px" v-model="serviceId" />
+        </div>
+        <Button @click="updateServerSetting" style="margin-top: 25px">Update</Button>
       </div>
     </div>
     <div class="tiling-setting" v-if="store.tritonConfig">
       <h3>Settings for image tiling</h3>
       <div class="field-row">
-        <div class="field-column">
+        <div class="field-column tile-field">
           <div
             v-if="'x' in store.inputMinShape && 'y' in store.inputMinShape"
           >
@@ -33,7 +39,7 @@
             ></InputNumber>
           </div>
         </div>
-        <div class="field-column">
+        <div class="field-column tile-field">
           <div
             v-if="'x' in store.inputMinShape && 'y' in store.inputMinShape"
           >
@@ -76,11 +82,10 @@
   flex-wrap: wrap;
 }
 .field-column {
-  width: 15%;
-  min-width: 220px;
+  width: 20%;
 }
-#server-select {
-  width: 300px;
+.tile-field {
+  min-width: 220px;
 }
 </style>
 
@@ -93,21 +98,28 @@ export default {
   setup() {
     const store = useStore()
     const parametersStore = useParametersStore()
-    const serverURL = ref("")
-    serverURL.value = store.serverUrl
+    const serverURL = ref(store.serverUrl)
+    const serviceId = ref(store.serviceId)
 
-    const updateServerUrl = () => {
-      store.$patch({ serverUrl: serverURL.value })
+    const updateServerSetting = () => {
+      store.$patch({
+        serverUrl: serverURL.value,
+        serviceId: serviceId.value,
+      })
     }
     
-    watch(() => store.serverUrl, () => {
+    watch(() => (store.serverUrl, store.serviceId), () => {
+      console.log('serverUrl:', store.serverUrl)
+      console.log('serviceId:', store.serviceId)
       serverURL.value = store.serverUrl
+      serviceId.value = store.serviceId
     })
     return {
-      store: store,
-      parametersStore: parametersStore,
-      updateServerUrl: updateServerUrl,
-      serverURL: serverURL
+      store,
+      parametersStore,
+      serverURL,
+      serviceId,
+      updateServerSetting
     }
   },
 }

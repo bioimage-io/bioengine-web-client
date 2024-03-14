@@ -164,29 +164,30 @@ async function createImjoyApi(api) {
   async function waitForReady() {
     await waitRunable();
   }
-  async function setServerUrl(url) {
+  async function setServerSetting(serverUrl, serviceId) {
     const globalStore = window.app.store.global;
     const runStore = window.app.store.run;
     runStore.$patch({ serverInitialized: false });
-    if (globalStore.serverUrl === url) {
+    if ((globalStore.serverUrl === serverUrl) && (globalStore.serviceId === serviceId)) {
       runStore.$patch({ serverInitialized: true });
       return;
     }
     globalStore.$patch({
-      serverUrl: url,
+      serverUrl: serverUrl,
+      serviceId: serviceId,
     });
     await waitState(() => runStore.serverInitialized, true);
   }
 
   return {
-    setup: setup,
-    runModel: runModel,
-    setParameters: setParameters,
-    listModels: listModels,
-    setModel: setModel,
-    setTiling: setTiling,
-    waitForReady: waitForReady,
-    setServerUrl: setServerUrl,
+    setup,
+    runModel,
+    setParameters,
+    listModels,
+    setModel,
+    setTiling,
+    waitForReady,
+    setServerSetting,
   };
 }
 

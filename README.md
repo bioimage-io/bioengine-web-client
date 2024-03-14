@@ -30,7 +30,7 @@ The following ImJoy API is supported:
 | setModel      | Set the current model, support input a model_id or model name or nick name | `model: object, string`                   |
 | setTiling     | Set the tile and overlap size for large images                             | `tileSizes: object; tileOverlaps: object` |
 | waitForReady  | Wait for the model to be ready                                             |                                           |
-| setServerUrl  | Set the server url                                                         | `url: string`                             |
+| setServersetting  | Set the server url, and service id,                                    | `serverUrl: string; serviceId: string`    |
 
 Usage example:
 
