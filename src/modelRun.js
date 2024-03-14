@@ -71,6 +71,17 @@ class TritonExecutor {
     });
     return ret;
   }
+
+  async executeRawModel(array, modelId, additionalParameters = {}) {
+    console.log("Running cellpose with parameters: ", additionalParameters);
+    const ret = await this.triton.execute({
+      inputs: [array],
+      model_name: modelId,
+      _rkwargs: true,
+    });
+    return ret;
+  }
+
 }
 
 export class ModelRunner {
@@ -208,7 +219,8 @@ export class ModelRunner {
   async submitTensor(tensor, additionalParameters = undefined) {
     const reverseEnd = this.inputEndianness === "<";
     const data_type = this.rdf.inputs[0].data_type;
-    const reshapedImg = tfjsToImJoy(tensor, reverseEnd, data_type);
+    //const reshapedImg = tfjsToImJoy(tensor, reverseEnd, data_type);
+    const reshapedImg = tfjsToImJoy(tensor, reverseEnd, "float32");
     const modelId = this.modelId;
     let outImg;
     if (modelId === "cellpose-python") {
@@ -218,11 +230,14 @@ export class ModelRunner {
       );
       outImg = resp.mask;
     } else {
-      const resp = await this.tritonExecutor.execute(modelId, [reshapedImg]);
-      if (!resp.result.success) {
-        throw new Error(resp.result.error);
-      }
-      outImg = resp.result.outputs[0];
+      //const resp = await this.tritonExecutor.execute(modelId, [reshapedImg]);
+      //const resp = await this.tritonExecutor.executeRawModel(reshapedImg, modelId, {});
+      const resp = await this.tritonExecutor.executeRawModel(reshapedImg, "affable-shark", {});
+      //if (!resp.result.success) {
+      //  throw new Error(resp.result.error);
+      //}
+      //outImg = resp.result.outputs[0];
+      outImg = resp[506]
     }
     return outImg;
   }
