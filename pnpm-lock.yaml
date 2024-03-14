@@ -26,6 +26,9 @@ dependencies:
   pinia:
     specifier: ^2.1.7
     version: 2.1.7(vue@3.3.11)
+  pinia-plugin-persistedstate:
+    specifier: ^3.2.1
+    version: 3.2.1(pinia@2.1.7)
   primevue:
     specifier: ^3.43.0
     version: 3.43.0(vue@3.3.11)
@@ -876,6 +879,14 @@ packages:
 
   /picocolors@1.0.0:
     resolution: {integrity: sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==}
+
+  /pinia-plugin-persistedstate@3.2.1(pinia@2.1.7):
+    resolution: {integrity: sha512-MK++8LRUsGF7r45PjBFES82ISnPzyO6IZx3CH5vyPseFLZCk1g2kgx6l/nW8pEBKxxd4do0P6bJw+mUSZIEZUQ==}
+    peerDependencies:
+      pinia: ^2.0.0
+    dependencies:
+      pinia: 2.1.7(vue@3.3.11)
+    dev: false
 
   /pinia@2.1.7(vue@3.3.11):
     resolution: {integrity: sha512-+C2AHFtcFqjPih0zpYuvof37SFxMQ7OEG2zV9jRI12i9BOy3YQVAHwdKtyyc8pDcDyIc33WCIsZaCFWU7WWxGQ==}

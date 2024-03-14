@@ -91,12 +91,12 @@
 
 <script>
 import { watch, ref } from 'vue'
-import { useStore } from '../stores/global'
+import { useServerStore } from '../stores/server'
 import { useParametersStore } from '../stores/parameters'
 
 export default {
   setup() {
-    const store = useStore()
+    const store = useServerStore()
     const parametersStore = useParametersStore()
     const serverURL = ref(store.serverUrl)
     const serviceId = ref(store.serviceId)

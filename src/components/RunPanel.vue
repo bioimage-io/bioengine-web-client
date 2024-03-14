@@ -104,6 +104,7 @@ import { ModelRunner } from "../modelRun";
 import { ImagejJsController } from "../viewerControl";
 import { useStore } from "../stores/global";
 import { useRunStore } from "../stores/run";
+import { useServerStore } from "../stores/server";
 import { useParametersStore } from "../stores/parameters";
 
 
@@ -115,6 +116,7 @@ export default {
     setup: () => {
         const store = useStore();
         const runStore = useRunStore();
+        const serverStore = useServerStore();
 
         const newIjWindow = ref(true)
         const waiting = ref(false);
@@ -245,19 +247,16 @@ export default {
         )
 
         watch(
-            () => (store.serverUrl, store.serviceId),
+            () => (serverStore.serverUrl, serverStore.serviceId),
             async () => {
                 const store = useStore();
+                const serverStore = useServerStore();
                 const runStore = useRunStore();
-                store.$patch({
-                    serverUrl: store.serverUrl,
-                    serviceId: store.serviceId,
-                });
                 const oldModelId = store.runner.modelId;
                 setInfoPanel("Initializing server...", true);
                 turnButtons(false);
                 try {
-                    const runner = new ModelRunner(store.serverUrl, store.serviceId);
+                    const runner = new ModelRunner(serverStore.serverUrl, serverStore.serviceId);
                     await runner.init();
                     await initModel(oldModelId, runner);
                     store.$patch({

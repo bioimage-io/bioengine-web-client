@@ -6,10 +6,12 @@ import InputNumber from "primevue/inputnumber";
 import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import "primevue/resources/themes/saga-blue/theme.css";
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
 import App from "./App.vue";
 import { useStore } from "./stores/global";
 import { useParametersStore } from "./stores/parameters";
+import { useServerStore } from "./stores/server";
 import { setupStoreWatcher } from "./watcher";
 import { useRunStore, waitState, waitRunable } from "./stores/run";
 
@@ -165,14 +167,14 @@ async function createImjoyApi(api) {
     await waitRunable();
   }
   async function setServerSetting(serverUrl, serviceId) {
-    const globalStore = window.app.store.global;
+    const serverStore = window.app.store.server;
     const runStore = window.app.store.run;
     runStore.$patch({ serverInitialized: false });
-    if ((globalStore.serverUrl === serverUrl) && (globalStore.serviceId === serviceId)) {
+    if ((serverStore.serverUrl === serverUrl) && (serverStore.serviceId === serviceId)) {
       runStore.$patch({ serverInitialized: true });
       return;
     }
-    globalStore.$patch({
+    serverStore.$patch({
       serverUrl: serverUrl,
       serviceId: serviceId,
     });
@@ -217,6 +219,7 @@ app.component("Dropdown", Dropdown);
 app.component("InputText", InputText);
 
 const pinia = createPinia();
+pinia.use(piniaPluginPersistedstate);
 app.use(pinia);
 app.mount("#app");
 
@@ -224,6 +227,7 @@ window.app.vue = app;
 
 window.app.store = {
   global: useStore(),
+  server: useServerStore(),
   parameters: useParametersStore(),
   run: useRunStore(),
 };
