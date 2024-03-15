@@ -92,30 +92,33 @@
 <script>
 import { watch, ref } from 'vue'
 import { useServerStore } from '../stores/server'
+import { useStore } from '../stores/global'
 import { useParametersStore } from '../stores/parameters'
 
 export default {
   setup() {
-    const store = useServerStore()
+    const store = useStore()
+    const serverStore = useServerStore()
     const parametersStore = useParametersStore()
-    const serverURL = ref(store.serverUrl)
-    const serviceId = ref(store.serviceId)
+    const serverURL = ref(serverStore.serverUrl)
+    const serviceId = ref(serverStore.serviceId)
 
     const updateServerSetting = () => {
-      store.$patch({
+      serverStore.$patch({
         serverUrl: serverURL.value,
         serviceId: serviceId.value,
       })
     }
     
-    watch(() => (store.serverUrl, store.serviceId), () => {
-      console.log('serverUrl:', store.serverUrl)
-      console.log('serviceId:', store.serviceId)
-      serverURL.value = store.serverUrl
-      serviceId.value = store.serviceId
+    watch(() => (serverStore.serverUrl, serverStore.serviceId), () => {
+      console.log('serverUrl:', serverStore.serverUrl)
+      console.log('serviceId:', serverStore.serviceId)
+      serverURL.value = serverStore.serverUrl
+      serviceId.value = serverStore.serviceId
     })
     return {
       store,
+      serverStore,
       parametersStore,
       serverURL,
       serviceId,
