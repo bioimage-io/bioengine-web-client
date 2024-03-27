@@ -113,6 +113,10 @@ function reverseEndianness(arrayBuffer, bytesPerElement) {
 }
 
 export function imjoyToTfjs(arr) {
+  // patch for older image.js
+  if(arr._rvalue instanceof ArrayBuffer){
+    arr._rvalue = new Uint8Array(arr._rvalue)
+  }
   let buffer = new ArrayBuffer(arr._rvalue.length);
   let bufferView = new Uint8Array(buffer);
   bufferView.set(arr._rvalue);
