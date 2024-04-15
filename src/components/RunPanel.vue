@@ -247,7 +247,7 @@ export default {
         )
 
         watch(
-            () => (serverStore.serverUrl, serverStore.serviceId),
+            () => (serverStore.serverUrl, serverStore.serviceId, serverStore.updateCount),
             async () => {
                 const store = useStore();
                 const serverStore = useServerStore();

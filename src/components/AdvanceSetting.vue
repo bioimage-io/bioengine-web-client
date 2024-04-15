@@ -107,6 +107,7 @@ export default {
       serverStore.$patch({
         serverUrl: serverURL.value,
         serviceId: serviceId.value,
+        updateCount: serverStore.updateCount + 1
       })
     }
     
