@@ -343,20 +343,20 @@ export default {
                 viewerControl: new ImagejJsController(this.ij),
             });
             this.setInfoPanel("");
+            this.turnButtons(true);
             if (window.app.client) {
                 const clientApi = window.app.client;
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.has("model")) {
-                  const model = urlParams.get("model");
-                  await clientApi.setModel(model);
+                    const model = urlParams.get("model");
+                    await clientApi.setModel(model);
                 }
                 if (urlParams.has("server_url") && urlParams.has("triton_service_id")) {
-                  const serverUrl = urlParams.get("server_url");
-                  const serviceId = urlParams.get("triton_service_id");
-                  await clientApi.setServerSetting(serverUrl, serviceId);
+                    const serverUrl = urlParams.get("server_url");
+                    const serviceId = urlParams.get("triton_service_id");
+                    await clientApi.setServerSetting(serverUrl, serviceId);
                 }
             }
-            this.turnButtons(true);
         },
         async initImJoy() {
             function waitForImjoy(timeout = 10000) {

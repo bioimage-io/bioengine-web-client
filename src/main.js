@@ -170,13 +170,10 @@ async function createImjoyApi(api) {
     const serverStore = window.app.store.server;
     const runStore = window.app.store.run;
     runStore.$patch({ serverInitialized: false });
-    if ((serverStore.serverUrl === serverUrl) && (serverStore.serviceId === serviceId)) {
-      runStore.$patch({ serverInitialized: true });
-      return;
-    }
     serverStore.$patch({
       serverUrl: serverUrl,
       serviceId: serviceId,
+      updateCount: serverStore.updateCount + 1,
     });
     await waitState(() => runStore.serverInitialized, true);
   }
