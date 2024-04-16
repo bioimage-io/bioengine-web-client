@@ -8,7 +8,7 @@
           <InputText id="server-select" v-model="serverURL" />
         </div>
         <div class="field-column" style="width: 140px">
-          <label class="field-label">Service ID</label>
+          <label class="field-label">Triton Service ID</label>
           <InputText id="service-select" style="width: 140px" v-model="serviceId" />
         </div>
         <Button @click="updateServerSetting" style="margin-top: 25px">Update</Button>

@@ -45,6 +45,18 @@ await client.setTiling({ x: 64, y: 64 });
 await client.runModel();
 ```
 
+## url parameters
+
+- `model`: model name or model id
+- `server_url`: the bioengine server url
+- `triton_service_id`: the triton service id
+
+Example:
+
+```
+https://bioimage-io.github.io/bioengine-web-client/?model=discreet-rooster&server_url=https://hypha.bioimage.io&triton_service_d=triton-client
+```
+
 ## As an Bioimage.IO chatbot extension
 
 This web client can be used as an extension of the [Bioimage.IO chatbot](https://github.com/bioimage-io/bioimageio-chatbot/)
