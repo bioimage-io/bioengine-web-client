@@ -201,7 +201,7 @@ async function initImJoy() {
     window.app.imjoy = api;
     const clientApi = await createImjoyApi(api)
     await api.export(clientApi);
-    window.api.client = clientApi;
+    window.app.client = clientApi;
   } else {
     // start as an standalone app
     await setupImJoyApp();
