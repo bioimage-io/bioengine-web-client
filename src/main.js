@@ -196,6 +196,19 @@ async function initImJoy() {
     const imjoyRPC = await loadImJoyRPC();
     const api = await imjoyRPC.setupRPC({ name: "bioengine-web-client" });
     window.app.imjoy = api;
+    const observer = new MutationObserver(async (mutations) => {
+      const runPanel = document.getElementById("test-run-panel");
+      if (api.resizeWindow) {
+        const htmlElement = document.documentElement;
+        htmlElement.style.overflow = "hidden";
+        await api.resizeWindow("100%", runPanel.clientHeight+"px");
+      }
+    });
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true
+    });
     const clientApi = await createImjoyApi(api)
     await api.export(clientApi);
     window.app.client = clientApi;

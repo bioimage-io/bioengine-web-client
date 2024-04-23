@@ -1,37 +1,39 @@
 <template>
     <div id="test-run-body">
-        <div class="model-selection">
-            <div class="model-selection-line">
-                <div class="model-selection-label">Model</div>
-                <ModelSelect :open="this.modelSelectEnable" />
+        <div id="test-run-panel">
+            <div class="model-selection">
+                <div class="model-selection-line">
+                    <div class="model-selection-label">Model</div>
+                    <ModelSelect :open="this.modelSelectEnable" />
+                </div>
+                <div class="model-selection-tips" v-if="!isPluginMode">ℹ️ Please visit <a href="https://bioimage.io/#/"
+                        target="_blank">bioimage.io</a> to view detailed information about the model.</div>
             </div>
-            <div class="model-selection-tips">ℹ️ Please visit <a href="https://bioimage.io/#/"
-                    target="_blank">bioimage.io</a> to view detailed information about the model.</div>
-        </div>
-        <div id="buttons">
-            <Button :disabled="!this.buttonEnabledInput" @click="this.loadTestInput">
-                Load sample image
-            </Button>
-            <Button class="is-primary" :disabled="!this.buttonEnabledRun" @click="this.runModel">
-                Run model
-            </Button>
-            <Button :disabled="!this.buttonEnabledOutput" @click="this.loadTestOutput">
-                Show reference output
-            </Button>
-        </div>
-        <ModelParameters :overlay="waiting" />
-        <HideContainer :summary="'Advanced settings'">
-            <OverlayContainer :open="waiting">
-                <AdvanceSetting />
-            </OverlayContainer>
-        </HideContainer>
-        <div id="info">
-            <LoadingAnimation v-if="this.waiting" />
-            <div v-else-if="$props.ij === null">
-                <span>💡Tip: Drag and drop your own image file below to try out the
-                    model. We support formats like .tiff, .png, and .jpg</span>
+            <div id="buttons">
+                <Button :disabled="!this.buttonEnabledInput" @click="this.loadTestInput">
+                    Load sample image
+                </Button>
+                <Button class="is-primary" :disabled="!this.buttonEnabledRun" @click="this.runModel">
+                    Run model
+                </Button>
+                <Button :disabled="!this.buttonEnabledOutput" @click="this.loadTestOutput">
+                    Show reference output
+                </Button>
             </div>
-            <div id="info-panel" :style="{ color: infoColor }">{{ this.info }}</div>
+            <ModelParameters :overlay="waiting" />
+            <HideContainer :summary="'Advanced settings'">
+                <OverlayContainer :open="waiting">
+                    <AdvanceSetting />
+                </OverlayContainer>
+            </HideContainer>
+            <div id="info">
+                <LoadingAnimation v-if="this.waiting" />
+                <div v-else-if="$props.ij === null">
+                    <span>💡Tip: Drag and drop your own image file below to try out the
+                        model. We support formats like .tiff, .png, and .jpg</span>
+                </div>
+                <div id="info-panel" :style="{ color: infoColor }">{{ this.info }}</div>
+            </div>
         </div>
         <div id="ij-container" v-if="newIjWindow"></div>
     </div>
@@ -292,6 +294,8 @@ export default {
             }
         )
 
+        const isPluginMode = window.self !== window.top;
+
         return {
             waiting,
             error,
@@ -305,6 +309,7 @@ export default {
             initModel,
             runModel,
             newIjWindow,
+            isPluginMode,
         }
     },
     data: () => ({
