@@ -74,7 +74,7 @@ class TritonExecutor {
 }
 
 export class ModelRunner {
-  constructor(serverUrl = "https://hypha.bioimage.io", serviceId = "triton-client") {
+  constructor(serverUrl = "https://ai.imjoy.io", serviceId = "triton-client") {
     this.tritonExecutor = new TritonExecutor(serverUrl, serviceId);
     this.rdf = null;
     this.modelTritonConfig = null;
