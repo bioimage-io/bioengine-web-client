@@ -51,7 +51,7 @@ await client.runModel();
 - `server_url`: the bioengine server url
 - `triton_service_id`: the triton service id
 
-Example: [Click here](https://bioimage-io.github.io/bioengine-web-client/?model=discreet-rooster&server_url=https://ai.imjoy.io&triton_service_id=triton-client)
+Example: [Click here](https://bioimage-io.github.io/bioengine-web-client/?model=discreet-rooster&server_url=https://hypha.bioimage.io&triton_service_id=triton-client)
 
 
 ## As an Bioimage.IO chatbot extension
