@@ -3,7 +3,7 @@ import { loadCellposeRdf } from "../utils";
 
 export const useStore = defineStore("store", {
   state: () => ({
-    serverUrl: "https://ai.imjoy.io",
+    serverUrl: "https://hypha.bioimage.io",
     runner: null,
     viewerControl: null,
     models: [],
